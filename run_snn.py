@@ -41,8 +41,8 @@ def run_simulation(params):
     return {"w_mean": params.w_mean, "mean_isi": mean_isi, "total_spikes": snn.get_total_spikes(), "lzw": lzw}
 
 def main():
-    parser = argparse.ArgumentParser(description="Run ISI simulation.")
-    parser.add_argument("--config", type=str, default="config.yaml", help="Path to the YAML configuration file.")
+    parser = argparse.ArgumentParser(description="Run simulation.")
+    parser.add_argument("--config", type=str, default="snn_config.yaml", help="Path to the YAML configuration file.")
     parser.add_argument("--output", type=str, default="results/snn", help="Optional output directory name.")
     args = parser.parse_args()
 
