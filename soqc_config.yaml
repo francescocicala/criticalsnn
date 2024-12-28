@@ -4,6 +4,7 @@ refractory_time: 1.0
 w0: 60
 w1: 0
 alpha_value: 0.000002
+seed: 42
 
 i_small_range:
   min: 0.01

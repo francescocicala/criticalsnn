@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Script to solve a nonlinear equation for W across a range of parameters,
 compare with a theoretical critical value, record relative errors,
@@ -7,13 +6,12 @@ configuration file using `load_config`.
 """
 
 import os
-import csv
 import numpy as np
 from mpmath import mp, mpf
-import matplotlib.pyplot as plt  # Only if you need plotting
 import argparse
 import time
 import pandas as pd
+import random
 
 # Import our config loader
 from src.utils import load_config
@@ -127,6 +125,10 @@ def main():
 
     # Load configuration from YAML
     config = load_config(args.config)
+
+    # Set seed for reproducibility.
+    np.random.seed(config["seed"])
+    random.seed(config["seed"])
 
     # Pull out parameters from config
     tau = config['tau']
