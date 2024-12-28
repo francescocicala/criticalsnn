@@ -33,7 +33,7 @@ class SNN:
         self.membrane_potentials = np.random.uniform(0, self.params.theta, self.params.num_neurons)
         self.synaptic_weights = np.random.normal(loc=self.params.w_mean, scale=self.params.w_std, size=(self.params.num_neurons, self.params.num_neurons))
         
-        # TODO: initialize it to a (num_neurons, simulation_steps) 
+        # TODO: initialize it to a (num_neurons, simulation_steps)-array for better parallelization.
         self.spike_times = [[] for _ in range(self.params.num_neurons)]
         np.fill_diagonal(self.synaptic_weights, 0)
         self.refractory_timer = np.zeros(self.params.num_neurons)
@@ -79,3 +79,6 @@ class SNN:
         else:
             mean_isi = 0
         return mean_isi
+
+    def get_total_spikes(self):
+        return self.tot_spike

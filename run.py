@@ -45,7 +45,7 @@ def run_simulation(params):
     snn.simulate()
     mean_isi = snn.get_mean_isi()
     lzw = lzw_complexity_from_matrix(snn.spike_matrix)
-    return {"w_mean": params.w_mean, "mean_isi": mean_isi, "lzw": lzw}
+    return {"w_mean": params.w_mean, "mean_isi": mean_isi, "total_spikes": snn.get_total_spikes(), "lzw": lzw}
 
 def main():
     parser = argparse.ArgumentParser(description="Run ISI simulation.")
@@ -76,7 +76,6 @@ def main():
             results.append(run_simulation(params))
     
     pd.DataFrame(results).to_csv(os.path.join(output_dir, "simulation_results.csv"), index=False)
-
 
 
 if __name__ == "__main__":
