@@ -1,0 +1,17 @@
+
+experiment_repetitions: 3
+w_means_range_min: 0.01
+w_means_range_max: 0.06
+w_means_range_step: 0.005
+experiment_repetitions: 2
+seed: 42
+snn_params:
+  num_neurons: 100
+  theta: 7.0
+  tau: 10.0
+  external_current: 0.5
+  t_ref: 2.0
+  leak: 0
+  w_mean: 0.0
+  w_std: 0.1
+  simulation_steps: 1000
