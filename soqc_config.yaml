@@ -1,0 +1,21 @@
+tau: 10
+threshold: 7
+refractory_time: 1.0
+w0: 60
+w1: 0
+alpha_value: 0.000002
+
+i_small_range:
+  min: 0.01
+  max: 0.99
+  n_steps: 10
+
+i_large_range:
+  min: 1
+  max: 100
+  n_steps: 10
+
+n_range:
+  min: 1000
+  max: 2000
+  step: 100
