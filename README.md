@@ -18,9 +18,8 @@ pip install -r requirements.txt
 - Adapt config_soqc with desired parameters
 - Run `python run_soqc.py`
 
-## Structure
+## Repository Structure
 
-**Repository Structure**
 ```
 .
 ├── src/
