@@ -4,8 +4,10 @@ import pandas as pd
 import os
 import argparse
 import time
+import matplotlib.pyplot as plt
 from src.models import SNN, SNNParameters
 from src.utils import load_config
+from src.snn_plots import plot_isi_results
 
 def lzw_complexity_from_matrix(matrix):
     """
@@ -68,8 +70,10 @@ def main():
         for _ in range(config["experiment_repetitions"]):
             results.append(run_simulation(params))
     
-    pd.DataFrame(results).to_csv(os.path.join(output_dir, "simulation_results.csv"), index=False)
-
+    df_results = pd.DataFrame(results)
+    df_results.to_csv(os.path.join(output_dir, "simulation_results.csv"), index=False)
+    plot_isi_results(df_results, params.num_neurons, params.theta, params.tau, params.external_current, params.t_ref)
+    plt.savefig(os.path.join(output_dir, "simulation_isi_plot.png"), dpi=300)
 
 if __name__ == "__main__":
     main()
