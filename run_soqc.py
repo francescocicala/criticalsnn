@@ -34,6 +34,7 @@ def main():
                     project_name=os.environ.get("COMETML_PROJECT"),
                     workspace=os.environ.get("COMETML_WORKSPACE")
                 )
+        comet_experiment.log_parameters(config)
 
     # Pull out parameters from config
     tau = config['tau']

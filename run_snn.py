@@ -131,6 +131,7 @@ def main() -> None:
                     project_name=os.environ.get("COMETML_PROJECT"),
                     workspace=os.environ.get("COMETML_WORKSPACE")
                 )
+    comet_experiment.log_parameters(config)
 
     # Set seed for reproducibility
     np.random.seed(config["seed"])
