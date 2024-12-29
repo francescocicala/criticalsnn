@@ -3,9 +3,12 @@ import numpy as np
 import argparse
 import time
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from src.utils import load_config
 from src.soqc import SolverParams, solve_w, compute_w_theoretical_crit
+from src.soqc_plots import get_relative_error_stats, plot_relative_error_3d
+
 
 def main():
     parser = argparse.ArgumentParser(description="SOqC.")
@@ -95,7 +98,17 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     # Save to CSV
-    pd.DataFrame(results).to_csv(os.path.join(output_dir, "soqc_results.csv"), index=False)
+    df_results = pd.DataFrame(results)
+    df_results.to_csv(os.path.join(output_dir, "soqc_results.csv"), index=False)
+
+    # Plot
+    get_relative_error_stats(df_results)
+    plt.savefig(os.path.join(output_dir, "soqc_plot.png"), dpi=300)
+
+    plot_relative_error_3d(df_results, tau=tau, figure_size=(12, 8))
+    plt.savefig(os.path.join(output_dir, "soqc_3d_plot.png"), dpi=300)
+
+
 
 if __name__ == "__main__":
     main()
