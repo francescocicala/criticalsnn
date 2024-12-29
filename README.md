@@ -22,10 +22,9 @@ COMETML_WORKSPACE=""
 
 ## Run SOqC
 - Adapt config_soqc with desired parameters
-- Run `python run_soqc.py`
+- Run `python run_soqc.py` (add the `--cometml` flag for tracking the experiment).
 
 ## Repository Structure
-
 ```
 .
 ├── src/

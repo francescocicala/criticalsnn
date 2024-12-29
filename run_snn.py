@@ -118,7 +118,6 @@ def main() -> None:
         default=False,
         help="Enable CometML integration."
 )
-
     args = parser.parse_args()
 
     # Load configuration from YAML file

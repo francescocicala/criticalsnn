@@ -4,6 +4,8 @@ import argparse
 import time
 import pandas as pd
 import matplotlib.pyplot as plt
+from dotenv import load_dotenv
+import comet_ml
 
 from src.utils import load_config
 from src.soqc import SolverParams, solve_w, compute_w_theoretical_crit
@@ -14,10 +16,24 @@ def main():
     parser = argparse.ArgumentParser(description="SOqC.")
     parser.add_argument("--config", type=str, default="soqc_config.yaml", help="Path to the YAML configuration file.")
     parser.add_argument("--output", type=str, default="results/soqc", help="Optional output directory name.")
+    parser.add_argument(
+        "--cometml",
+        action="store_true",
+        default=False,
+        help="Enable CometML integration."
+)
     args = parser.parse_args()
 
     # Load configuration from YAML
     config = load_config(args.config)
+
+    if args.cometml:
+        load_dotenv()
+        comet_experiment = comet_ml.Experiment(
+                    api_key=os.environ.get("COMETML_API_KEY"),
+                    project_name=os.environ.get("COMETML_PROJECT"),
+                    workspace=os.environ.get("COMETML_WORKSPACE")
+                )
 
     # Pull out parameters from config
     tau = config['tau']
@@ -104,6 +120,10 @@ def main():
     # Plot
     plot_relative_error_3d(df_results, tau=tau, figure_size=(12, 8))
     plt.savefig(os.path.join(output_dir, "soqc_3d_plot.png"), dpi=300)
+
+    if args.cometml:
+        comet_experiment.log_figure("isi_vs_w_mean", figure=plt)
+        comet_experiment.end()
 
 
 if __name__ == "__main__":
