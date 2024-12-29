@@ -106,6 +106,5 @@ def main():
     plt.savefig(os.path.join(output_dir, "soqc_3d_plot.png"), dpi=300)
 
 
-
 if __name__ == "__main__":
     main()

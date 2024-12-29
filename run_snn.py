@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from typing import Dict, Any, List
+from dotenv import load_dotenv
+import comet_ml
 
 from src.models import SNN, SNNParameters
 from src.utils import load_config
@@ -116,6 +118,14 @@ def main() -> None:
     config = load_config(args.config)
     params = SNNParameters(**config['snn_params'])
 
+    load_dotenv()
+    comet_experiment = comet_ml.Experiment(
+                api_key=os.environ.get("COMETML_API_KEY"),
+                project_name=os.environ.get("COMETML_PROJECT"),
+                workspace=os.environ.get("COMETML_WORKSPACE")
+            )
+
+
     # Set seed for reproducibility
     np.random.seed(config["seed"])
     random.seed(config["seed"])
@@ -152,6 +162,8 @@ def main() -> None:
         params.t_ref
     )
     plt.savefig(os.path.join(output_dir, "simulation_isi_plot.png"), dpi=300)
+    comet_experiment.log_figure("isi_vs_w_mean", figure=plt)
+    comet_experiment.end()
 
 if __name__ == "__main__":
     main()
