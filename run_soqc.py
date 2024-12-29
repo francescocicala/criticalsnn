@@ -1,123 +1,13 @@
-"""
-Script to solve a nonlinear equation for W across a range of parameters,
-compare with a theoretical critical value, record relative errors,
-and save results to a CSV file. The parameters are loaded from a YAML
-configuration file using `load_config`.
-"""
-
 import os
 import numpy as np
-from mpmath import mp, mpf
 import argparse
 import time
 import pandas as pd
-import random
 
-# Import our config loader
 from src.utils import load_config
-
-
-def solve_w(w0, w1, alpha_value, tau, num_neurons, threshold, external_current, refractory_time):
-    """
-    Solve the nonlinear equation for W using mpmath's findroot (Newton-Raphson).
-
-    Parameters
-    ----------
-    w0 : float
-        Initial W value.
-    w1 : float
-        Maximum W value.
-    alpha_value : float
-        Exponential decay parameter.
-    tau : float
-        Characteristic time constant.
-    num_neurons : int
-        Number of neurons (N).
-    threshold : float
-        Threshold value (theta).
-    external_current : float
-        External current (I).
-    refractory_time : float
-        Refractory time (tau_ref).
-
-    Returns
-    -------
-    tuple
-        (solution, max_estimated_error)
-        solution : mp.mpf
-            The solution for W obtained from the numeric solver.
-        max_estimated_error : mp.mpf
-            An estimate of the maximum error in the solution.
-    """
-
-    # Convert parameters to multiprecision
-    w0_mp = mpf(w0)
-    w1_mp = mpf(w1)
-    alpha_mp = mpf(alpha_value)
-    tau_mp = mpf(tau)
-    n_mp = mpf(num_neurons)
-    theta_mp = mpf(threshold)
-    i_mp = mpf(external_current)
-    tau_ref_mp = mpf(refractory_time)
-
-    # Define the equation for W
-    def equation_w_mpmath(w_value):
-        """
-        The function to be solved: w0 + (w1 - w0)*exp(-alpha*Delta) - w = 0
-        where Delta depends on w_value.
-        """
-        delta = (tau_mp * n_mp / (2 * i_mp)) * (
-            (theta_mp - w_value * (n_mp - 1)) +
-            mp.sqrt((theta_mp - w_value * (n_mp - 1))**2 +
-                    (4 * i_mp * w_value * (n_mp - 1) * tau_ref_mp) / (n_mp * tau_mp))
-        )
-        return w0_mp + (w1_mp - w0_mp) * mp.e**(-alpha_mp * delta) - w_value
-
-    # Initial guess
-    initial_guess = (
-        theta_mp / (n_mp - 1)
-        - 2 * i_mp * tau_ref_mp / (tau_mp * n_mp * (n_mp - 1))
-    )
-
-    # Solve using Newton's method
-    solution = mp.findroot(equation_w_mpmath, initial_guess, solver="newton", tol=mp.mpf('1e-30'))
-
-    # Calculate the residual
-    residual = abs(equation_w_mpmath(solution))
-
-    # Estimate derivative near the solution
-    epsilon = mp.mpf('1e-10')
-    derivative_val = abs(
-        (equation_w_mpmath(solution + epsilon) - equation_w_mpmath(solution)) / epsilon
-    )
-
-    # Protect against a near-zero derivative
-    min_derivative_threshold = mp.mpf('1e-10')
-    effective_derivative = max(derivative_val, min_derivative_threshold)
-
-    # Estimate maximum error
-    max_estimated_error = residual / effective_derivative
-
-    # Optional diagnostic checks
-    if residual > mp.mpf('2e-10'):
-        print("Warning: High residual detected:", residual)
-
-    if derivative_val < mp.mpf('0.9'):
-        print("Warning: Low derivative detected:", derivative_val)
-
-    return solution, max_estimated_error
-
+from src.soqc import SolverParams, solve_w, compute_w_theoretical_crit
 
 def main():
-    """
-    Main function to:
-      1. Load config values from 'soqc_config.yaml'.
-      2. Loop over two ranges of external_current (I) and a range of N.
-      3. Solve W numerically and compare with the theoretical critical value.
-      4. Track min/max relative errors.
-      5. Save results to a CSV file.
-    """
-
     parser = argparse.ArgumentParser(description="SOqC.")
     parser.add_argument("--config", type=str, default="soqc_config.yaml", help="Path to the YAML configuration file.")
     parser.add_argument("--output", type=str, default="results/soqc", help="Optional output directory name.")
@@ -125,10 +15,6 @@ def main():
 
     # Load configuration from YAML
     config = load_config(args.config)
-
-    # Set seed for reproducibility.
-    np.random.seed(config["seed"])
-    random.seed(config["seed"])
 
     # Pull out parameters from config
     tau = config['tau']
@@ -150,81 +36,50 @@ def main():
     n_max = config['n_range']['max']
     n_step = config['n_range']['step']
 
-    # Prepare for storing results
+    # Create the arrays for small and large currents
+    i_small_values = np.linspace(i_small_min, i_small_max, i_small_n_steps)
+    i_large_values = np.linspace(i_large_min, i_large_max, i_large_n_steps)
+    # Combine them into one, ensuring small currents come first
+    i_all_values = np.concatenate([i_small_values, i_large_values])
+
     min_error_percent = 1e9
     max_error_percent = 0.0
     results = []
 
-    # --------------------------------------
-    # First loop: external_current from 0.01 to 0.99
-    # via i_small_range in config (1..99 => 0.01..0.99)
-    # --------------------------------------
-    for external_current in np.linspace(i_small_min, i_small_max, i_small_n_steps):
-        print(f"Solving for external_current = {external_current:.2f} ...")
+    # Single loop over the combined i_all_values
+    for external_current in i_all_values:
+        # We still want a different print format for small vs. large
+        if external_current < 1:
+            print(f"Solving for external_current = {external_current:.2f} ...")
+        else:
+            print(f"Solving for external_current = {external_current:.0f} ...")
 
+        # The same loop over num_neurons
         for num_neurons in range(n_min, n_max, n_step):
-            w_solution, _ = solve_w(w0, w1, alpha_value, tau,
-                                    num_neurons, threshold,
-                                    external_current, refractory_time)
-
-            # Theoretical critical value for W
-            w_theoretical_crit = (
-                threshold / (num_neurons - 1)
-                - 2 * external_current * refractory_time
-                / (tau * num_neurons * (num_neurons - 1))
+            params = SolverParams(
+                w0=w0,
+                w1=w1,
+                alpha_value=alpha_value,
+                tau=tau,
+                num_neurons=num_neurons,
+                threshold=threshold,
+                external_current=external_current,
+                refractory_time=refractory_time
             )
 
-            # Relative error (%)
-            relative_error_percent = (
-                abs(w_solution - w_theoretical_crit) 
-                / abs(w_theoretical_crit)
-                * 100.0
+            w_solution, _ = solve_w(params)
+
+            w_theoretical_crit = compute_w_theoretical_crit(
+                num_neurons, threshold, external_current, refractory_time, tau
             )
 
+            relative_error_percent = abs(w_solution - w_theoretical_crit) / abs(w_theoretical_crit) * 100.0
             results.append({
                 'N': num_neurons,
                 'I': external_current,
                 'relative_error_percent': float(relative_error_percent)
             })
 
-            # Track min/max across all parameter sets
-            if relative_error_percent < min_error_percent:
-                min_error_percent = relative_error_percent
-            if relative_error_percent > max_error_percent:
-                max_error_percent = relative_error_percent
-
-    # --------------------------------------
-    # Second loop: external_current as an integer from 1 to 99
-    # via i_large_range in config
-    # --------------------------------------
-    for external_current in np.linspace(i_large_min, i_large_max, i_large_n_steps):
-        print(f"Solving for external_current = {external_current:.0f} ...")
-
-        for num_neurons in range(n_min, n_max, n_step):
-            w_solution, _ = solve_w(w0, w1, alpha_value, tau,
-                                    num_neurons, threshold,
-                                    external_current, refractory_time)
-
-            # Theoretical critical value for W
-            w_theoretical_crit = (
-                threshold / (num_neurons - 1)
-                - 2 * external_current * refractory_time
-                / (tau * num_neurons * (num_neurons - 1))
-            )
-
-            relative_error_percent = (
-                abs(w_solution - w_theoretical_crit)
-                / abs(w_theoretical_crit)
-                * 100.0
-            )
-
-            results.append({
-                'N': num_neurons,
-                'I': external_current,
-                'relative_error_percent': float(relative_error_percent)
-            })
-
-            # Track min/max errors
             if relative_error_percent < min_error_percent:
                 min_error_percent = relative_error_percent
             if relative_error_percent > max_error_percent:
@@ -239,7 +94,7 @@ def main():
     output_dir = os.path.join(args.output, timestamp)
     os.makedirs(output_dir, exist_ok=True)
 
-    os.makedirs(output_dir, exist_ok=True)
+    # Save to CSV
     pd.DataFrame(results).to_csv(os.path.join(output_dir, "soqc_results.csv"), index=False)
 
 if __name__ == "__main__":
