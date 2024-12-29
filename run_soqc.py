@@ -102,9 +102,6 @@ def main():
     df_results.to_csv(os.path.join(output_dir, "soqc_results.csv"), index=False)
 
     # Plot
-    get_relative_error_stats(df_results)
-    plt.savefig(os.path.join(output_dir, "soqc_plot.png"), dpi=300)
-
     plot_relative_error_3d(df_results, tau=tau, figure_size=(12, 8))
     plt.savefig(os.path.join(output_dir, "soqc_3d_plot.png"), dpi=300)
 
