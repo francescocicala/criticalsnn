@@ -9,10 +9,16 @@ Authors: Alessio Basti, Ruggero Freddi, Francesco Cicala.
 ```bash
 pip install -r requirements.txt
 ```
+- If you intend to integrate your experiments with CometML, add a `.env` file in the root folder:
+```
+COMETML_API_KEY=""
+COMETML_PROJECT=""
+COMETML_WORKSPACE=""
+```
 
 ## Run SNN simulation
 - Adapt config_snn.yaml with desired parameters
-- Run `python run_snn.py`
+- Run `python run_snn.py` (add the `--cometml` flag for tracking the experiment).
 
 ## Run SOqC
 - Adapt config_soqc with desired parameters

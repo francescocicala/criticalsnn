@@ -112,19 +112,26 @@ def main() -> None:
         default="results/snn",
         help="Optional output directory name."
     )
+    parser.add_argument(
+        "--cometml",
+        action="store_true",
+        default=False,
+        help="Enable CometML integration."
+)
+
     args = parser.parse_args()
 
     # Load configuration from YAML file
     config = load_config(args.config)
     params = SNNParameters(**config['snn_params'])
 
-    load_dotenv()
-    comet_experiment = comet_ml.Experiment(
-                api_key=os.environ.get("COMETML_API_KEY"),
-                project_name=os.environ.get("COMETML_PROJECT"),
-                workspace=os.environ.get("COMETML_WORKSPACE")
-            )
-
+    if args.cometml:
+        load_dotenv()
+        comet_experiment = comet_ml.Experiment(
+                    api_key=os.environ.get("COMETML_API_KEY"),
+                    project_name=os.environ.get("COMETML_PROJECT"),
+                    workspace=os.environ.get("COMETML_WORKSPACE")
+                )
 
     # Set seed for reproducibility
     np.random.seed(config["seed"])
@@ -162,8 +169,10 @@ def main() -> None:
         params.t_ref
     )
     plt.savefig(os.path.join(output_dir, "simulation_isi_plot.png"), dpi=300)
-    comet_experiment.log_figure("isi_vs_w_mean", figure=plt)
-    comet_experiment.end()
+
+    if args.cometml:
+        comet_experiment.log_figure("isi_vs_w_mean", figure=plt)
+        comet_experiment.end()
 
 if __name__ == "__main__":
     main()
