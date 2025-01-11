@@ -9,12 +9,12 @@ seed: 42
 i_small_range:
   min: 0.01
   max: 0.99
-  n_steps: 10
+  n_steps: 100
 
 i_large_range:
   min: 1
   max: 100
-  n_steps: 10
+  n_steps: 100
 
 n_range:
   min: 1000
