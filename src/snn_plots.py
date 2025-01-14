@@ -167,3 +167,108 @@ def plot_isi_results(
 
     # Tight layout for cleaner spacing
     plt.tight_layout()
+
+def plot_lzw_median(
+    df_lzw,
+    theta=7,
+    tau=10,
+    I=0.5,
+    t_ref=2,
+    N=1000,
+    x_min=0.0061,
+    x_max=0.1
+):
+    """
+    Plot the median LZW complexity normalized by its maximum value
+    and compare it with the theoretical critical weight.
+
+    Parameters
+    ----------
+    df_lzw : pandas.DataFrame
+        DataFrame containing LZW complexity data with columns 'w_mean' and 'lzw_complexity'.
+    theta : float, optional
+        Firing threshold (default = 7).
+    tau : float, optional
+        Time constant (default = 10).
+    I : float, optional
+        External current (default = 0.5).
+    t_ref : float, optional
+        Refractory period (default = 2).
+    N : int, optional
+        Number of neurons (default = 1000).
+    x_min : float, optional
+        Minimum x value for the plot (default = 0.0061).
+    x_max : float, optional
+        Maximum x value for the plot (default = 0.1).
+    """
+
+    # Initialize matplotlib style
+    init_matplotlib_style()
+
+    # Compute the critical point
+    w_critical = compute_w_critical(N, theta, tau, I, t_ref)
+
+    # Group by mean weights and calculate median LZW complexity and quartiles
+    grouped_lzw = df_lzw.groupby('w_mean')
+    median_values = grouped_lzw['lzw_complexity'].median()
+    q1_values = grouped_lzw['lzw_complexity'].quantile(0.25)
+    q3_values = grouped_lzw['lzw_complexity'].quantile(0.75)
+
+    # Normalize the median values by the maximum value
+    max_complexity = median_values.max()
+    median_normalized = median_values / max_complexity
+    q1_normalized = q1_values / max_complexity
+    q3_normalized = q3_values / max_complexity
+
+    w_means = median_values.index.values
+
+    # Create the plot
+    plt.figure(figsize=(10, 6))
+    plt.plot(
+        w_means,
+        median_normalized,
+        label='Normalized Median LZW Complexity',
+        color='black',
+        linewidth=4
+    )
+    plt.fill_between(
+        w_means,
+        q1_normalized,
+        q3_normalized,
+        color='gray',
+        alpha=0.3,
+        label='25th-75th Percentile Range'
+    )
+
+    # Add a vertical line at the critical point
+    plt.axvline(
+        x=w_critical,
+        color='purple',
+        linestyle='--',
+        linewidth=3,
+        label=r'Theoretical $\langle W \rangle_{\text{critical}}$'
+    )
+
+    # Use log-log scale
+    plt.yscale('log')
+
+    # Set x-axis range
+    plt.xlim(left=x_min, right=x_max)
+
+    # Axis labels
+    plt.xlabel(r'$\langle W \rangle$', fontsize=26, labelpad=10)
+    plt.ylabel(r'Normalized LZW Complexity', fontsize=26, labelpad=10)
+
+    # Add legend
+    plt.legend(fontsize=16)
+
+    # Add gridlines
+    plt.grid(True, which="both", linestyle='--')
+
+    # Tight layout for cleaner figure spacing
+    plt.tight_layout()
+
+    # Show the plot
+    plt.show()
+
+
