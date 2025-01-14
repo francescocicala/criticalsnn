@@ -11,7 +11,7 @@ import comet_ml
 
 from src.models import SNN, SNNParameters
 from src.utils import load_config
-from src.snn_plots import plot_isi_results
+from src.snn_plots import plot_isi_results, plot_lzw_median
 
 def lzw_complexity_from_matrix(matrix: np.ndarray) -> int:
     """
@@ -63,19 +63,6 @@ def lzw_complexity_from_matrix(matrix: np.ndarray) -> int:
     return complexity
 
 def run_simulation(params: SNNParameters) -> Dict[str, Any]:
-    """
-    Run a simulation for a Spiking Neural Network and compute relevant metrics.
-
-    Args:
-        params (SNNParameters): An instance containing the SNN settings (e.g., num_neurons, threshold).
-
-    Returns:
-        Dict[str, Any]: A dictionary containing:
-            - 'w_mean': The mean synaptic weight used in this simulation.
-            - 'mean_isi': The mean inter-spike interval of the network.
-            - 'total_spikes': Total spikes observed in the simulation.
-            - 'lzw': The LZW complexity of the spike matrix.
-    """
     snn = SNN(params)
     snn.simulate()
     mean_isi = snn.get_mean_isi()
@@ -88,17 +75,6 @@ def run_simulation(params: SNNParameters) -> Dict[str, Any]:
     }
 
 def main() -> None:
-    """
-    Main function to parse arguments, run the simulation(s), and save outputs.
-    
-    Steps:
-        1. Parse command-line arguments.
-        2. Load configuration from YAML.
-        3. Set RNG seeds for reproducibility.
-        4. Create an output directory with timestamp.
-        5. Loop over a range of w_mean values and run multiple simulations.
-        6. Save results and plot ISI and LZW complexity results.
-    """
     parser = argparse.ArgumentParser(description="Run simulation.")
     parser.add_argument(
         "--config",
