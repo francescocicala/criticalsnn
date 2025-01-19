@@ -8,10 +8,14 @@ import matplotlib.pyplot as plt
 from typing import Dict, Any, List
 from dotenv import load_dotenv
 import comet_ml
+import logging
 
 from src.models import SNN, SNNParameters
 from src.utils import load_config
 from src.snn_plots import plot_isi_results, plot_lzw_median
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def lzw_complexity_from_matrix(matrix: np.ndarray) -> int:
     """
@@ -94,9 +98,19 @@ def main() -> None:
         default=False,
         help="Enable CometML integration."
     )
+    parser.add_argument(
+        "--dry_run",
+        action="store_true",
+        default=False,
+        help="If enabled, doesn't create a folder with results."
+    )
+    
     args = parser.parse_args()
 
-    # Load configuration from YAML file
+    if args.dry_run:
+        logging.info("Dry run enabled. No output will be saved.")
+
+    logging.info("Loading configuration from %s", args.config)
     config = load_config(args.config)
     params = SNNParameters(**config['snn_params'])
 
@@ -108,17 +122,13 @@ def main() -> None:
             workspace=os.environ.get("COMETML_WORKSPACE")
         )
         comet_experiment.log_parameters(config)
+        logging.info("CometML integration enabled")
 
     # Set seed for reproducibility
     np.random.seed(config["seed"])
     random.seed(config["seed"])
 
-    # Create output directory with a timestamp
-    timestamp = time.strftime("%Y%m%d-%H%M%S")
-    output_dir = os.path.join(args.output, timestamp)
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Run simulations over a range of w_mean values
+    logging.info("Running simulations over a range of w_mean values")
     w_means = np.arange(
         config["w_means_range_min"],
         config["w_means_range_max"],
@@ -129,13 +139,23 @@ def main() -> None:
     for w_mean in w_means:
         params.w_mean = float(w_mean)
         for _ in range(config["experiment_repetitions"]):
+            logging.info("Running simulation with w_mean = %f", w_mean)
             results.append(run_simulation(params))
 
-    # Save results
     df_results = pd.DataFrame(results)
-    df_results.to_csv(os.path.join(output_dir, "simulation_results.csv"), index=False)
+    
+    if not args.dry_run:
+        # Create output directory with a timestamp
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        output_dir = os.path.join(args.output, timestamp)
+        os.makedirs(output_dir, exist_ok=True)
+        logging.info("Saving results to %s", output_dir)
 
-    # Plot ISI results and save the figure
+        # Save results
+        df_results.to_csv(os.path.join(output_dir, "simulation_results.csv"), index=False)
+
+    # Plot ISI results
+    logging.info("Plotting ISI results")
     plot_isi_results(
         df_results,
         params.num_neurons,
@@ -144,9 +164,12 @@ def main() -> None:
         params.external_current,
         params.t_ref
     )
-    plt.savefig(os.path.join(output_dir, "simulation_isi_plot.png"), dpi=300)
+    if not args.dry_run:
+        # Save ISI plot
+        plt.savefig(os.path.join(output_dir, "simulation_isi_plot.png"), dpi=300)
 
-    # Plot LZW complexity results and save the figure
+    # Plot LZW complexity results
+    logging.info("Plotting LZW complexity results")
     plot_lzw_median(
         df_results,
         params.theta,
@@ -155,12 +178,17 @@ def main() -> None:
         params.t_ref,
         params.num_neurons
     )
-    plt.savefig(os.path.join(output_dir, "simulation_lzw_plot.png"), dpi=300)
+    if not args.dry_run:
+        # Save LZW complexity plot
+        plt.savefig(os.path.join(output_dir, "simulation_lzw_plot.png"), dpi=300)
 
     if args.cometml:
         comet_experiment.log_figure("isi_vs_w_mean", figure=plt)
         comet_experiment.log_figure("lzw_vs_w_mean", figure=plt)
         comet_experiment.end()
+        logging.info("CometML figures logged")
+
+    logging.info("Simulation completed")
 
 if __name__ == "__main__":
     main()
