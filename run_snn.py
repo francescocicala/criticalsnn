@@ -21,13 +21,6 @@ def lzw_complexity_from_matrix(matrix: np.ndarray) -> int:
     """
     Calculate the Lempel-Ziv-Welch (LZW) complexity of a vector created by
     concatenating the columns of a 2D matrix.
-
-    Steps:
-        1. Transpose the matrix to read it column by column.
-        2. Flatten the transposed matrix into a 1D vector.
-        3. Convert the numeric vector into a string.
-        4. Compute the LZW complexity of the string.
-
     Args:
         matrix (np.ndarray): A 2D NumPy array representing spike data
                              (rows typically time, columns neurons).
