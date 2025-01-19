@@ -17,6 +17,9 @@ from src.snn_plots import plot_isi_results, plot_lzw_median
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 def lzw_complexity_from_matrix(matrix: np.ndarray) -> int:
     """
     Calculate the Lempel-Ziv-Welch (LZW) complexity of a vector created by
