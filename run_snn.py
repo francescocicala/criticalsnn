@@ -71,7 +71,7 @@ def run_simulation(params: SNNParameters) -> Dict[str, Any]:
         "w_mean": params.w_mean,
         "mean_isi": mean_isi,
         "total_spikes": snn.get_total_spikes(),
-        "lzw": complexity,
+        "lzw_complexity": complexity,
     }
 
 def main() -> None:
