@@ -9,6 +9,7 @@ from typing import Dict, Any, List
 from dotenv import load_dotenv
 import comet_ml
 import logging
+from tqdm import tqdm
 
 from src.models import SNN, SNNParameters
 from src.utils import load_config
@@ -132,10 +133,9 @@ def main() -> None:
     )
 
     results: List[Dict[str, Any]] = []
-    for w_mean in w_means:
+    for w_mean in tqdm(w_means, desc="w_mean values"):
         params.w_mean = float(w_mean)
         for _ in range(config["experiment_repetitions"]):
-            logging.info("Running simulation with w_mean = %f", w_mean)
             results.append(run_simulation(params))
 
     df_results = pd.DataFrame(results)
