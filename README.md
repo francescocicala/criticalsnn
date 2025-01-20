@@ -19,6 +19,10 @@ COMETML_WORKSPACE=""
 ## Run SNN simulation
 - Adapt config_snn.yaml with desired parameters
 - Run `python run_snn.py` (add the `--cometml` flag for tracking the experiment).
+- Use the `--dry_run` flag to execute the script without creating a folder for results. This is useful for testing or debugging purposes:
+  ```bash
+  python run_snn.py --dry_run
+  ```
 
 ## Run SOqC
 - Adapt config_soqc with desired parameters
