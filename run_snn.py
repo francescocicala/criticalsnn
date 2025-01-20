@@ -10,14 +10,12 @@ from dotenv import load_dotenv
 import comet_ml
 import logging
 from tqdm import tqdm
+import yaml
 
 from src.models import SNN, SNNParameters
 from src.utils import load_config
 from src.snn_plots import plot_isi_results, plot_lzw_median
 from src.snn_three_plots import plot_all_results
-
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -150,6 +148,10 @@ def main() -> None:
 
         # Save results
         df_results.to_csv(os.path.join(output_dir, "simulation_results.csv"), index=False)
+        
+        # Store the SNNParameters as a YAML file
+        with open(os.path.join(output_dir, "snn_parameters.yaml"), "w") as f:
+            yaml.dump(config, f)
         
         logging.info("Plotting all results")
         plot_all_results(df_results, params)
