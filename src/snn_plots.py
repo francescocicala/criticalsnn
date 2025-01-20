@@ -82,7 +82,7 @@ def plot_isi_results(
     tau=10,
     I=0.5,
     t_ref=2,
-    x_min=0.0061,
+    x_min=0,
     x_max=0.1
 ):
     """
@@ -105,7 +105,7 @@ def plot_isi_results(
     t_ref : float, optional
         Refractory period (default = 2).
     x_min : float, optional
-        Minimum x value for the plot (default = 0.0061).
+        Minimum x value for the plot (default = 0.).
     x_max : float, optional
         Maximum x value for the plot (default = 0.1).
     """
@@ -175,7 +175,7 @@ def plot_lzw_median(
     I=0.5,
     t_ref=2,
     N=1000,
-    x_min=0.0061,
+    x_min=0,
     x_max=0.1
 ):
     """
@@ -197,7 +197,7 @@ def plot_lzw_median(
     N : int, optional
         Number of neurons (default = 1000).
     x_min : float, optional
-        Minimum x value for the plot (default = 0.0061).
+        Minimum x value for the plot (default = 0.).
     x_max : float, optional
         Maximum x value for the plot (default = 0.1).
     """
