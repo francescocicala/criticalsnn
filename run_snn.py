@@ -156,6 +156,10 @@ def main() -> None:
         plt.savefig(os.path.join(output_dir, "simulation_all_plot.png"), dpi=300)
         logging.info("All results plot saved to %s", os.path.join(output_dir, "simulation_all_plot.png"))
 
+    if args.cometml:
+        comet_experiment.log_figure("all_results", figure=plt)
+        logging.info("All results plot logged to CometML")
+
     # Plot ISI results
     logging.info("Plotting ISI results")
     plot_isi_results(
@@ -166,6 +170,10 @@ def main() -> None:
         params.external_current,
         params.t_ref
     )
+    if args.cometml:
+        comet_experiment.log_figure("isi_vs_w_mean", figure=plt)
+        logging.info("ISI plot logged to CometML")
+
     if not args.dry_run:
         # Save ISI plot
         plt.savefig(os.path.join(output_dir, "simulation_isi_plot.png"), dpi=300)
@@ -185,7 +193,6 @@ def main() -> None:
         plt.savefig(os.path.join(output_dir, "simulation_lzw_plot.png"), dpi=300)
 
     if args.cometml:
-        comet_experiment.log_figure("isi_vs_w_mean", figure=plt)
         comet_experiment.log_figure("lzw_vs_w_mean", figure=plt)
         comet_experiment.end()
         logging.info("CometML figures logged")
