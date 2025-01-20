@@ -14,6 +14,7 @@ from tqdm import tqdm
 from src.models import SNN, SNNParameters
 from src.utils import load_config
 from src.snn_plots import plot_isi_results, plot_lzw_median
+from src.snn_three_plots import plot_all_results
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -149,6 +150,11 @@ def main() -> None:
 
         # Save results
         df_results.to_csv(os.path.join(output_dir, "simulation_results.csv"), index=False)
+        
+        logging.info("Plotting all results")
+        plot_all_results(df_results, params)
+        plt.savefig(os.path.join(output_dir, "simulation_all_plot.png"), dpi=300)
+        logging.info("All results plot saved to %s", os.path.join(output_dir, "simulation_all_plot.png"))
 
     # Plot ISI results
     logging.info("Plotting ISI results")
