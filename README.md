@@ -9,7 +9,7 @@ Authors: Alessio Basti, Ruggero Freddi, Francesco Cicala.
 ```bash
 pip install -r requirements.txt
 ```
-- If you intend to integrate your experiments with CometML, add a `.env` file in the root folder:
+- (Optional) If you intend to integrate your experiments with CometML, add a `.env` file in the root folder:
 ```
 COMETML_API_KEY=""
 COMETML_PROJECT=""
