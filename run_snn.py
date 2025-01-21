@@ -14,7 +14,6 @@ import yaml
 
 from src.models import SNN, SNNParameters
 from src.utils import load_config
-from src.snn_plots import plot_isi_results, plot_lzw_median
 from src.snn_three_plots import plot_all_results
 
 # Configure logging
@@ -65,13 +64,11 @@ def lzw_complexity_from_matrix(matrix: np.ndarray) -> int:
 def run_simulation(params: SNNParameters) -> Dict[str, Any]:
     snn = SNN(params)
     snn.simulate()
-    mean_isi = snn.get_mean_isi()
-    complexity = lzw_complexity_from_matrix(snn.spike_matrix)
     return {
         "w_mean": params.w_mean,
-        "mean_isi": mean_isi,
+        "mean_isi": snn.get_mean_isi(),
         "total_spikes": snn.get_total_spikes(),
-        "lzw_complexity": complexity,
+        "lzw_complexity": lzw_complexity_from_matrix(snn.spike_matrix),
     }
 
 def main() -> None:
@@ -161,43 +158,7 @@ def main() -> None:
     if args.cometml:
         comet_experiment.log_figure("all_results", figure=plt)
         logging.info("All results plot logged to CometML")
-
-    # Plot ISI results
-    logging.info("Plotting ISI results")
-    plot_isi_results(
-        df_results,
-        params.num_neurons,
-        params.theta,
-        params.tau,
-        params.external_current,
-        params.t_ref
-    )
-    if args.cometml:
-        comet_experiment.log_figure("isi_vs_w_mean", figure=plt)
-        logging.info("ISI plot logged to CometML")
-
-    if not args.dry_run:
-        # Save ISI plot
-        plt.savefig(os.path.join(output_dir, "simulation_isi_plot.png"), dpi=300)
-
-    # Plot LZW complexity results
-    logging.info("Plotting LZW complexity results")
-    plot_lzw_median(
-        df_results,
-        params.theta,
-        params.tau,
-        params.external_current,
-        params.t_ref,
-        params.num_neurons
-    )
-    if not args.dry_run:
-        # Save LZW complexity plot
-        plt.savefig(os.path.join(output_dir, "simulation_lzw_plot.png"), dpi=300)
-
-    if args.cometml:
-        comet_experiment.log_figure("lzw_vs_w_mean", figure=plt)
         comet_experiment.end()
-        logging.info("CometML figures logged")
 
     logging.info("Simulation completed")
 
