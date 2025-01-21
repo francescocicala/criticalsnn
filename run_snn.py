@@ -14,7 +14,7 @@ import yaml
 
 from src.models import SNN, SNNParameters
 from src.utils import load_config
-from src.snn_three_plots import plot_all_results
+from src.snn_plots import plot_all_results
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
