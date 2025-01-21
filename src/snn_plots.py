@@ -5,7 +5,6 @@ import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 from src.models import SNNParameters
 
-
 def init_matplotlib_style():
     """
     Initialize the matplotlib style/settings.
@@ -31,20 +30,21 @@ def plot_all_results(simulation_df: pd.DataFrame, snn_parameters: SNNParameters)
     leak = snn_parameters.leak
     num_neurons = snn_parameters.num_neurons
 
+    # TODO: Parameterize the range of Delta.
     Delta = np.logspace(0.001, 3.2, 500)
 
-    def W_leak_free(Delta):
+    def w_leak_free(Delta):
         return (theta * Delta - (external_current * Delta**2) / (tau * num_neurons)) / ((num_neurons - 1) * (Delta - tau_ref))
 
-    def W_leak(Delta):
+    def w_leak(Delta):
         return (
             ((leak * theta * Delta**2) / (1 - np.exp(-leak * Delta)) - (external_current * Delta**2) / (tau * num_neurons))
             / ((num_neurons - 1) * (Delta - tau_ref))
         )
 
     Delta = np.logspace(0.001, 3.2, 500)
-    W_leak_free_values = W_leak_free(Delta)
-    W_leak_values = W_leak(Delta)
+    w_leak_free_values = w_leak_free(Delta)
+    w_leak_values = w_leak(Delta)
 
     horizontal_line = theta / (num_neurons - 1) - 2 * external_current * tau_ref / (tau * (num_neurons - 1) * num_neurons)
 
@@ -72,9 +72,9 @@ def plot_all_results(simulation_df: pd.DataFrame, snn_parameters: SNNParameters)
     fig, axs = plt.subplots(2, 2, figsize=(24, 16), constrained_layout=True)
 
     # Top-left plot
-    axs[0, 0].plot(Delta, W_leak_free_values, label=r'$\langle W \rangle(\langle \Delta\rangle)_{\text{leak-free}}$', color='purple', linewidth=5)
+    axs[0, 0].plot(Delta, w_leak_free_values, label=r'$\langle W \rangle(\langle \Delta\rangle)_{\text{leak-free}}$', color='purple', linewidth=5)
     axs[0, 0].axhline(horizontal_line, color='purple', linestyle='--', linewidth=3, label=r"$\langle W \rangle_{\text{critical}}$")
-    axs[0, 0].plot(Delta, W_leak_values, label=r'$\langle W \rangle(\langle \Delta\rangle)_{\text{leak}}$ with $\alpha_1$', color='green', linewidth=5)
+    axs[0, 0].plot(Delta, w_leak_values, label=r'$\langle W \rangle(\langle \Delta\rangle)_{\text{leak}}$ with $\alpha_1$', color='green', linewidth=5)
     if leak > 0:
         delta_alpha = 0.2 / leak if leak != 0 else np.inf
         axs[0, 0].axvline(delta_alpha, color='green', linestyle=':', linewidth=3, label=r'$\alpha_1\langle \Delta\rangle=0.2$')
