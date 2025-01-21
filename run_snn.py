@@ -152,7 +152,7 @@ def main() -> None:
         
         logging.info("Plotting all results")
         plot_all_results(df_results, params)
-        plt.savefig(os.path.join(output_dir, "simulation_all_plot.png"), dpi=300)
+        plt.savefig(os.path.join(output_dir, "simulation_plots.png"), dpi=300)
         logging.info("All results plot saved to %s", os.path.join(output_dir, "simulation_all_plot.png"))
 
     if args.cometml:
