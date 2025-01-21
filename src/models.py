@@ -121,3 +121,45 @@ class SNN:
     def get_total_spikes(self) -> int:
         """Return the total number of spikes over the entire simulation."""
         return self.tot_spike
+
+def lzw_complexity_from_matrix(matrix: np.ndarray) -> int:
+    """
+    Calculate the Lempel-Ziv-Welch (LZW) complexity of a vector created by
+    concatenating the columns of a 2D matrix.
+    Args:
+        matrix (np.ndarray): A 2D NumPy array representing spike data
+                             (rows typically time, columns neurons).
+
+    Returns:
+        int: The LZW complexity of the concatenated sequence.
+    """
+    def lzw(seq: str) -> int:
+        """
+        Calculate the LZW complexity of a binary (string) sequence.
+
+        Args:
+            seq (str): The sequence string (e.g., '101001...').
+
+        Returns:
+            int: The size of the generated dictionary, representing
+                 the LZW complexity.
+        """
+        dictionary = {}
+        w = ""
+        for c in seq:
+            wc = w + c
+            if wc not in dictionary:
+                dictionary[wc] = len(dictionary)
+                w = c
+            else:
+                w = wc
+        return len(dictionary)
+
+    # Transpose and then flatten to read column by column
+    vector = matrix.T.flatten()
+    # Convert the vector into a string
+    vector_str = "".join(map(str, vector))
+
+    # Calculate the LZW complexity
+    complexity = lzw(vector_str)
+    return complexity
