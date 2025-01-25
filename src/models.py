@@ -15,7 +15,7 @@ class SNNParameters:
     t_ref: float = 2.0               # Refractory period
     leak: float = 0.0                # Leak parameter (for leaky integrate-and-fire)
     w_mean: float = 0.0              # Initial mean synaptic weight (updated if needed)
-    w_std: float = 1.0               # Std dev for the synaptic weights
+    w_std_coefficient: float = 1.0               # Std dev for the synaptic weights
     simulation_steps: int = 1000     # Number of steps in the simulation
 
 @dataclass
@@ -36,7 +36,7 @@ class SNN:
         )
         self.synaptic_weights = np.random.normal(
             loc=self.params.w_mean,
-            scale=self.params.w_std,
+            scale=self.params.w_std_coefficient * self.params.w_mean,
             size=(self.params.num_neurons, self.params.num_neurons)
         )
         

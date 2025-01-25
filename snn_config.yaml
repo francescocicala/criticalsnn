@@ -11,5 +11,5 @@ snn_params:
   t_ref: 1.0
   leak: 0.0005
   w_mean: 0.0
-  w_std: 0.1
+  w_std_coefficient: 0.1
   simulation_steps: 1000
