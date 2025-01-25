@@ -1,0 +1,159 @@
+"""Simulate a Spiking Neural Network (SNN) with a range of w_mean values."""
+
+import argparse
+import logging
+import os
+import random
+import time
+from tqdm import tqdm
+from typing import Any, Dict, List
+import yaml
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+from src.models import lzw_complexity_from_matrix
+from src.models_v2 import SNN, SimulationParams
+from src.snn_plots_v2 import plot_all_results
+from src.utils import load_config
+
+
+# Configure logging to include INFO level and above
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+
+def validate_conditions(params):
+    """Validate conditions based on parameter constraints."""
+    (
+        num_neurons,
+        membrane_threshold,
+        currents_period,
+        external_current,
+        leak_coefficient,
+        _,
+        _,
+        _,
+        _,
+    ) = params
+
+    logging.info("Validating conditions with parameters: %s", params)
+
+    if (
+        currents_period * num_neurons * leak_coefficient * membrane_threshold
+    ) != 0 and external_current / (
+        currents_period * num_neurons * leak_coefficient * membrane_threshold
+    ) < 1:
+        logging.warning(
+            "Condition violated: I / (tau * num_neurons * leak_coefficient * theta) < 1"
+        )
+        return False
+    if (
+        currents_period * num_neurons * membrane_threshold
+    ) != 0 and 2 * external_current / (
+        currents_period * num_neurons * membrane_threshold
+    ) > 1:
+        logging.warning("Condition violated: 2 * I / (tau * num_neurons * theta) > 1")
+        return False
+    if leak_coefficient != 0 and 1 / (2 * leak_coefficient) < 1:
+        logging.warning("Condition violated: 1 / (2 * leak_coefficient) < 1")
+        return False
+
+    logging.info("All conditions validated successfully.")
+    return True
+
+
+def run_simulation(simulation_params, weights_mean):
+    """Run the simulation with the given parameters."""
+    network = SNN(weights_mean, simulation_params)
+    spike_matrix = network.simulate()
+    return {
+        "w_mean": weights_mean,
+        "total_spikes": network.tot_spikes,
+        "lzw_complexity": lzw_complexity_from_matrix(spike_matrix),
+    }
+
+
+def main():
+    """Run simulation for a range of w_mean values, save the results and generate plots."""
+    parser = argparse.ArgumentParser(description="Run simulation.")
+    parser.add_argument(
+        "--config",
+        type=str,
+        default="snn_v2_config.yaml",
+        help="Path to the YAML configuration file.",
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        default="results/snn_v2",
+        help="Optional output directory name.",
+    )
+    parser.add_argument(
+        "--dry_run",
+        action="store_true",
+        default=False,
+        help="If enabled, doesn't create a folder with results.",
+    )
+
+    args = parser.parse_args()
+
+    if args.dry_run:
+        logging.info("Dry run enabled. No output will be saved.")
+
+    logging.info("Loading configuration from %s", args.config)
+    config = load_config(args.config)
+    simulation_params = SimulationParams(**config["simulation_params"])
+
+    # Set seed for reproducibility
+    np.random.seed(config["seed"])
+    random.seed(config["seed"])
+
+    logging.info("Running simulations over a range of w_mean values.")
+    w_means = np.arange(
+        config["w_means_range_start"],
+        config["w_means_range_end"],
+        config["w_means_range_step"],
+    )
+
+    print(f"Running simulation with parameters: {simulation_params}")
+    results: List[Dict[str, Any]] = []
+    for w_mean in tqdm(w_means, desc="w_mean values"):
+        for _ in range(config["experiment_repetitions"]):
+            results.append(run_simulation(simulation_params, float(w_mean)))
+
+    df_results = pd.DataFrame(results)
+
+    if not args.dry_run:
+        # Create output directory with a timestamp
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        output_dir = os.path.join(args.output, timestamp)
+        os.makedirs(output_dir, exist_ok=True)
+        logging.info("Saving results to %s", output_dir)
+
+        # Save results
+        df_results.to_csv(
+            os.path.join(output_dir, "simulation_results.csv"), index=False
+        )
+
+        # Store the SNNParameters as a YAML file
+        with open(
+            os.path.join(output_dir, "snn_parameters.yaml"), "w", encoding="utf-8"
+        ) as f:
+            yaml.dump(config, f)
+
+        logging.info("Plotting all results")
+        plot_all_results(df_results, simulation_params)
+        plt.savefig(os.path.join(output_dir, "simulation_plots.png"), dpi=300)
+        logging.info(
+            "All results plot saved to %s",
+            os.path.join(output_dir, "simulation_all_plot.png"),
+        )
+
+    logging.info("Simulation completed")
+
+
+if __name__ == "__main__":
+    main()
