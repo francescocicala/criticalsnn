@@ -4,48 +4,62 @@ import math
 import random
 from typing import List, Optional
 
+from dataclasses import dataclass
 import networkx as nx
 import numpy as np
+
+
+@dataclass
+class SimulationParams:
+    """Simulation parameters for the Spiking Neural Network (SNN)."""
+
+    num_neurons: int
+    membrane_threshold: float
+    currents_period: float
+    external_current: float
+    leak_coefficient: float
+    simulation_duration: int
+    refractory_period: float
+    small_world_graph_p: float
+    small_world_graph_k: float
 
 
 class SNN:
     """Spiking Neural Network (SNN) model."""
 
     def __init__(
-        self,
-        num_neurons: int,
-        membrane_threshold: float,
-        current_period: float,
-        external_current: float,
-        weights_mean: float,
-        simulation_duration: int,
-        refractory_period: float,
-        leak_coefficient: float,
-        small_world_graph_p: float = 0.1,
-        small_world_graph_k: int = 10,
+        self, weights_mean: float, simulation_params: SimulationParams
     ) -> None:
         """Initialize the spiking neural network (SNN) with parameters."""
         self.tot_spikes: int = 0
-        self.leak_refractory_ratio: float = leak_coefficient / refractory_period
-        self.num_neurons: int = num_neurons
-        self.membrane_threshold: float = membrane_threshold
-        self.current_period_times_refractory: float = current_period * refractory_period
-        self.external_current: float = external_current
-        self.simulation_duration: int = simulation_duration
-        self.refractory_period: float = refractory_period
+        self.leak_refractory_ratio: float = (
+            simulation_params.leak_coefficient / simulation_params.refractory_period
+        )
+        self.num_neurons: int = simulation_params.num_neurons
+        self.membrane_threshold: float = simulation_params.membrane_threshold
+        self.current_period_times_refractory: float = (
+            simulation_params.currents_period * simulation_params.refractory_period
+        )
+        self.external_current: float = simulation_params.external_current
+        self.simulation_duration: int = simulation_params.simulation_duration
+        self.refractory_period: float = simulation_params.refractory_period
         self.time_step: int = 1
         self.weights_mean: float = weights_mean
 
         self.membrane_potentials: np.ndarray = np.random.uniform(
             0, self.membrane_threshold, self.num_neurons
         )
-        self.spike_times: List[List[int]] = [[] for _ in range(num_neurons)]
+        self.spike_times: List[List[int]] = [
+            [] for _ in range(simulation_params.num_neurons)
+        ]
         self.avg_in_degree: Optional[float] = None
         self.spike_matrix: Optional[np.ndarray] = None
 
-        self.generate_synaptic_weights(small_world_graph_p, small_world_graph_k)
+        self.generate_synaptic_weights(
+            simulation_params.small_world_graph_p, simulation_params.small_world_graph_k
+        )
 
-        self.refractory_timer: np.ndarray = np.zeros(num_neurons)
+        self.refractory_timer: np.ndarray = np.zeros(simulation_params.num_neurons)
 
     def generate_synaptic_weights(
         self,
@@ -151,31 +165,3 @@ class SNN:
         else:
             mean_inter_spike_interval = 0
         return float(mean_inter_spike_interval) / self.refractory_period
-
-
-def calculate_weights_mean(
-    delta_mean: List[float],
-    leak_coefficient: float,
-    membrane_threshold: float,
-    external_current: float,
-    current_period: float,
-    num_neurons: int,
-    refractory_period: float,
-    beta: float,
-) -> np.ndarray:
-    """Calculate weights mean based on parameters."""
-    epsilon = 1e-10
-    delta_mean = np.array(delta_mean, dtype=np.float64)
-    denominator_exp = 1 - np.exp(-leak_coefficient * delta_mean)
-    denominator_exp = np.where(denominator_exp < epsilon, epsilon, denominator_exp)
-
-    numerator = (
-        leak_coefficient * membrane_threshold * delta_mean**2
-    ) / denominator_exp - (external_current * delta_mean**2) / (
-        current_period * num_neurons
-    )
-
-    denominator = beta * (delta_mean - refractory_period)
-    denominator = np.where(np.abs(denominator) < epsilon, epsilon, denominator)
-
-    return numerator / denominator
