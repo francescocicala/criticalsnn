@@ -49,30 +49,13 @@ def plot_all_results(simulation_df: pd.DataFrame, snn_parameters: SNNParameters)
     w_crit_spike = theta / (num_neurons - 1) - (2 * external_current * tau_ref) / (tau * num_neurons * (num_neurons - 1))
 
     w_mean_unique_values = simulation_df["w_mean"].unique()
-
-    grouped_spike = simulation_df.groupby("w_mean")
-    nspike_median = grouped_spike["total_spikes"].median().values
-    nspike_q1 = grouped_spike["total_spikes"].quantile(0.25).values
-    nspike_q3 = grouped_spike["total_spikes"].quantile(0.75).values
-
-    w_crit_lzw = theta / (num_neurons - 1) - (2 * external_current * tau_ref) / (tau * num_neurons * (num_neurons - 1))
-
-    grouped_lzw = simulation_df.groupby('w_mean')
-    median_values_complexity = grouped_lzw['lzw_complexity'].median().values
-    q1_values_complexity = grouped_lzw['lzw_complexity'].quantile(0.25).values
-    q3_values_complexity = grouped_lzw['lzw_complexity'].quantile(0.75).values
-
-    max_complexity = median_values_complexity.max()
-    median_complexity = median_values_complexity / max_complexity
-    q1_complexity = q1_values_complexity / max_complexity
-    q3_complexity = q3_values_complexity / max_complexity
-
+    
     fig, axs = plt.subplots(2, 2, figsize=(24, 16), constrained_layout=True)
 
     # Top-left plot
     axs[0, 0].plot(delta, w_leak_free_values, label=r'$\langle W \rangle(\langle \delta\rangle)_{\text{leak-free}}$', color='purple', linewidth=5)
     axs[0, 0].axhline(horizontal_line, color='purple', linestyle='--', linewidth=3, label=r"$\langle W \rangle_{\text{critical}}$")
-    axs[0, 0].plot(delta, w_leak_values, label=r'$\langle W \rangle(\langle \delta\rangle)_{\text{leak}}$ with $\alpha_1$', color='green', linewidth=5)
+    axs[0, 0].plot(delta, w_leak_values, label=r'$\langle W \rangle(\langle \delta\rangle)_{\text{leak}}$', color='green', linewidth=5)
     if leak > 0:
         delta_alpha = 0.2 / leak if leak != 0 else np.inf
         axs[0, 0].axvline(delta_alpha, color='green', linestyle=':', linewidth=3, label=r'$\alpha_1\langle \delta\rangle=0.2$')
@@ -83,6 +66,11 @@ def plot_all_results(simulation_df: pd.DataFrame, snn_parameters: SNNParameters)
     axs[0, 0].legend(loc="lower left")
 
     # Top-right plot
+    grouped_spike = simulation_df.groupby("w_mean")
+    nspike_median = grouped_spike["total_spikes"].median().values
+    nspike_q1 = grouped_spike["total_spikes"].quantile(0.25).values
+    nspike_q3 = grouped_spike["total_spikes"].quantile(0.75).values
+
     axs[0, 1].plot(w_mean_unique_values, nspike_median, color='black', linewidth=5, label=r"Num. Spikes (synthetic SNN)")
     axs[0, 1].fill_between(w_mean_unique_values, nspike_q1, nspike_q3, color='black', alpha=0.2)
     axs[0, 1].axvline(x=w_crit_spike, color='purple', linestyle='--', linewidth=5, label=r"$\langle W \rangle_{\text{critical}}$")
@@ -98,6 +86,14 @@ def plot_all_results(simulation_df: pd.DataFrame, snn_parameters: SNNParameters)
     axs[0, 1].legend(loc="upper left")
 
     # Bottom-left plot
+    w_crit_lzw = theta / (num_neurons - 1) - (2 * external_current * tau_ref) / (tau * num_neurons * (num_neurons - 1))
+
+    grouped_lzw = simulation_df.groupby('w_mean')
+    median_complexity = grouped_lzw['lzw_complexity'].median().values
+    median_complexity /= median_complexity.max()
+    q1_complexity = grouped_lzw['lzw_complexity'].quantile(0.25).values / median_complexity.max()
+    q3_complexity = grouped_lzw['lzw_complexity'].quantile(0.75).values / median_complexity.max()
+
     axs[1, 0].plot(w_mean_unique_values, median_complexity, color='black', linewidth=5,label=r"LZW complexity (synthetic SNN)")
     axs[1, 0].fill_between(w_mean_unique_values, q1_complexity, q3_complexity, color='black', alpha=0.2)
     axs[1, 0].axvline(x=w_crit_lzw, color='purple', linestyle='--', linewidth=5, label=r"$\langle W \rangle_{\text{critical}}$")
@@ -107,4 +103,4 @@ def plot_all_results(simulation_df: pd.DataFrame, snn_parameters: SNNParameters)
     axs[1, 0].legend(loc="upper left")
 
     # Bottom-right plot
-    axs[1, 1].axis('off')  # Disattiva l'asse per lo spazio vuoto
+    axs[1, 1].axis('off')  # Remove empty axis.
