@@ -78,12 +78,12 @@ class SNN:
             if np.random.rand() < 0.5:
                 synaptic_weights[i, j] = np.random.normal(
                     loc=self.weights_mean,
-                    scale=abs(self.weights_mean) / weights_scale_factor,
+                    scale=abs(self.weights_mean) * weights_scale_factor,
                 )
             else:
                 synaptic_weights[j, i] = np.random.normal(
                     loc=self.weights_mean,
-                    scale=abs(self.weights_mean) / weights_scale_factor,
+                    scale=abs(self.weights_mean) * weights_scale_factor,
                 )
 
         np.fill_diagonal(synaptic_weights, 0)
