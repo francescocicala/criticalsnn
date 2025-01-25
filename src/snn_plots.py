@@ -90,9 +90,10 @@ def plot_all_results(simulation_df: pd.DataFrame, snn_parameters: SNNParameters)
 
     grouped_lzw = simulation_df.groupby('w_mean')
     median_complexity = grouped_lzw['lzw_complexity'].median().values
-    median_complexity /= median_complexity.max()
-    q1_complexity = grouped_lzw['lzw_complexity'].quantile(0.25).values / median_complexity.max()
-    q3_complexity = grouped_lzw['lzw_complexity'].quantile(0.75).values / median_complexity.max()
+    median_complexity_max = median_complexity.max()
+    median_complexity /= median_complexity_max
+    q1_complexity = grouped_lzw['lzw_complexity'].quantile(0.25).values / median_complexity_max
+    q3_complexity = grouped_lzw['lzw_complexity'].quantile(0.75).values / median_complexity_max
 
     axs[1, 0].plot(w_mean_unique_values, median_complexity, color='black', linewidth=5,label=r"LZW complexity (synthetic SNN)")
     axs[1, 0].fill_between(w_mean_unique_values, q1_complexity, q3_complexity, color='black', alpha=0.2)
