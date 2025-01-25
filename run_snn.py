@@ -1,14 +1,16 @@
+"""Simulate a Spiking Neural Network (SNN) with a range of w_mean values."""
 import os
 import time
 import argparse
 import random
+from typing import Dict, Any, List
+import logging
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from typing import Dict, Any, List
 from dotenv import load_dotenv
 import comet_ml
-import logging
 from tqdm import tqdm
 import yaml
 
@@ -17,9 +19,13 @@ from src.utils import load_config
 from src.snn_plots import plot_all_results
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 
 def run_simulation(params: SNNParameters) -> Dict[str, Any]:
+    """Run a single simulation with the given parameters."""
     snn = SNN(params)
     snn.simulate()
     return {
@@ -29,33 +35,35 @@ def run_simulation(params: SNNParameters) -> Dict[str, Any]:
         "lzw_complexity": lzw_complexity_from_matrix(snn.spike_matrix),
     }
 
+
 def main() -> None:
+    """Run the simulation."""
     parser = argparse.ArgumentParser(description="Run simulation.")
     parser.add_argument(
         "--config",
         type=str,
         default="snn_config.yaml",
-        help="Path to the YAML configuration file."
+        help="Path to the YAML configuration file.",
     )
     parser.add_argument(
         "--output",
         type=str,
         default="results/snn",
-        help="Optional output directory name."
+        help="Optional output directory name.",
     )
     parser.add_argument(
         "--cometml",
         action="store_true",
         default=False,
-        help="Enable CometML integration."
+        help="Enable CometML integration.",
     )
     parser.add_argument(
         "--dry_run",
         action="store_true",
         default=False,
-        help="If enabled, doesn't create a folder with results."
+        help="If enabled, doesn't create a folder with results.",
     )
-    
+
     args = parser.parse_args()
 
     if args.dry_run:
@@ -63,14 +71,14 @@ def main() -> None:
 
     logging.info("Loading configuration from %s", args.config)
     config = load_config(args.config)
-    params = SNNParameters(**config['snn_params'])
+    params = SNNParameters(**config["snn_params"])
 
     if args.cometml:
         load_dotenv()
         comet_experiment = comet_ml.Experiment(
             api_key=os.environ.get("COMETML_API_KEY"),
             project_name=os.environ.get("COMETML_PROJECT"),
-            workspace=os.environ.get("COMETML_WORKSPACE")
+            workspace=os.environ.get("COMETML_WORKSPACE"),
         )
         comet_experiment.log_parameters(config)
         logging.info("CometML integration enabled")
@@ -83,7 +91,7 @@ def main() -> None:
     w_means = np.arange(
         config["w_means_range_min"],
         config["w_means_range_max"],
-        config["w_means_range_step"]
+        config["w_means_range_step"],
     )
 
     results: List[Dict[str, Any]] = []
@@ -93,7 +101,7 @@ def main() -> None:
             results.append(run_simulation(params))
 
     df_results = pd.DataFrame(results)
-    
+
     if not args.dry_run:
         # Create output directory with a timestamp
         timestamp = time.strftime("%Y%m%d-%H%M%S")
@@ -102,16 +110,21 @@ def main() -> None:
         logging.info("Saving results to %s", output_dir)
 
         # Save results
-        df_results.to_csv(os.path.join(output_dir, "simulation_results.csv"), index=False)
-        
+        df_results.to_csv(
+            os.path.join(output_dir, "simulation_results.csv"), index=False
+        )
+
         # Store the SNNParameters as a YAML file
         with open(os.path.join(output_dir, "snn_parameters.yaml"), "w") as f:
             yaml.dump(config, f)
-        
+
         logging.info("Plotting all results")
         plot_all_results(df_results, params)
         plt.savefig(os.path.join(output_dir, "simulation_plots.png"), dpi=300)
-        logging.info("All results plot saved to %s", os.path.join(output_dir, "simulation_all_plot.png"))
+        logging.info(
+            "All results plot saved to %s",
+            os.path.join(output_dir, "simulation_all_plot.png"),
+        )
 
     if args.cometml:
         comet_experiment.log_figure("all_results", figure=plt)
@@ -119,6 +132,7 @@ def main() -> None:
         comet_experiment.end()
 
     logging.info("Simulation completed")
+
 
 if __name__ == "__main__":
     main()
