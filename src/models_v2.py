@@ -1,4 +1,4 @@
-"""Spiking Neural Network (SNN) model."""
+"""Spiking Neural Network (SNN) model (V2)."""
 
 import math
 import random
