@@ -10,8 +10,8 @@ simulation_params:
   currents_period: 1
   number_of_external_current: 10
   leak_coefficient: 0.0001
-  simulation_duration: 800
+  simulation_duration: 3000
   refractory_period: 1
   guessed_critical_weight: 0.5
-  precision: 0.08
+  precision: 0.01
 
