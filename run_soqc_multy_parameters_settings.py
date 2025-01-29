@@ -4,7 +4,7 @@ import logging
 import random
 import numpy as np
 
-from src.models_for_SOqC import SNN, SoqcParams
+from src.models_for_soqc import SNN, SoqcParams
 from src.utils import load_config, program_parameters_reader, save_results_to_csv
 
 # Configure logging to include INFO level and above
