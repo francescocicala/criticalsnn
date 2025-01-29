@@ -1,12 +1,12 @@
 seed: 42
 simulation_params:
   num_neurons: 1000
-  membrane_threshold: 3
+  membrane_threshold: 10
   currents_period: 1
-  external_current: 1.5
+  external_current: 1
   number_of_external_current: 10
-  leak_coefficient: 0.001
-  simulation_duration: 100
+  leak_coefficient: 0.0001
+  simulation_duration: 2000
   refractory_period: 1
   guessed_critical_weight: 0.5
-
+  precision: 0.01
