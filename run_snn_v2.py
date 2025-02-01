@@ -73,6 +73,7 @@ def run_simulation(simulation_params, weights_mean):
         "w_mean": weights_mean,
         "total_spikes": network.tot_spikes,
         "lzw_complexity": lzw_complexity_from_matrix(spike_matrix),
+        "mean_isi": network.calculate_mean_isi(),
     }
 
 
@@ -112,10 +113,17 @@ def main():
     random.seed(config["seed"])
 
     logging.info("Running simulations over a range of w_mean values.")
+    w_critical = simulation_params.membrane_threshold / (
+        0.5 * simulation_params.small_world_graph_k
+    ) - (2 * simulation_params.external_current) / (
+        simulation_params.currents_period * 0.5 * simulation_params.small_world_graph_k
+    )
+    w_start = 0.5 * w_critical
+    w_end = 16 * w_critical
     w_means = np.arange(
-        config["w_means_range_start"],
-        config["w_means_range_end"],
-        config["w_means_range_step"],
+        w_start,
+        w_end,
+        (w_end - w_start) / config["w_means_range_num_steps"],
     )
 
     print(f"Running simulation with parameters: {simulation_params}")

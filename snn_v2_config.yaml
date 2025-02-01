@@ -1,7 +1,5 @@
 seed: 42
-w_means_range_start: 0.
-w_means_range_end: 0.2
-w_means_range_step: 0.01
+w_means_range_num_steps: 100
 experiment_repetitions: 1
 simulation_params:
   num_neurons: 1000
