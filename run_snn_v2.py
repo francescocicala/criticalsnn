@@ -116,7 +116,10 @@ def main():
     w_critical = simulation_params.membrane_threshold / (
         0.5 * simulation_params.small_world_graph_k
     ) - (2 * simulation_params.external_current) / (
-        simulation_params.currents_period * 0.5 * simulation_params.small_world_graph_k
+        simulation_params.currents_period
+        * simulation_params.num_neurons
+        * 0.5
+        * simulation_params.small_world_graph_k
     )
     w_start = 0.5 * w_critical
     w_end = 16 * w_critical
