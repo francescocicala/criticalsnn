@@ -1,10 +1,9 @@
-# test
-
 import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
 import matplotlib as mpl
+import numpy as np
 from matplotlib.ticker import ScalarFormatter
+
 from src.models_v2 import SimulationParams
 
 
@@ -29,13 +28,13 @@ def init_matplotlib_style():
 def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationParams):
     """Generate three plots: (1) Leak-free vs leak <W>(<ISI>) comparison, (2) number of spikes, and (3) LZW complexity."""
 
-    # Raise error if any of "w_mean", "total_spikes", or "lzw_complexity" columns are missing
+    # Raise error if any of "w_mean", "total_spikes", "lzw_complexity", or "mean_isi" columns are missing
     if not all(
         col in simulation_df.columns
-        for col in ["w_mean", "total_spikes", "lzw_complexity"]
+        for col in ["w_mean", "total_spikes", "lzw_complexity", "mean_isi"]
     ):
         raise ValueError(
-            "Missing columns in simulation_df: 'w_mean', 'total_spikes', 'lzw_complexity'"
+            "Missing columns in simulation_df: 'w_mean', 'total_spikes', 'lzw_complexity', 'mean_isi'"
         )
     init_matplotlib_style()
 
@@ -45,40 +44,42 @@ def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationP
     refractory_period = simulation_params.refractory_period
     leak_coefficient = simulation_params.leak_coefficient
     num_neurons = simulation_params.num_neurons
+    small_world_graph_k = simulation_params.small_world_graph_k
 
     def w_leak_free(delta):
         return (
             membrane_threshold * delta
             - (external_current * delta**2) / (currents_period * num_neurons)
-        ) / ((num_neurons - 1) * (delta - refractory_period))
+        ) / (0.5 * small_world_graph_k * (delta - 1))
 
     def w_leak(delta):
         return (
             (leak_coefficient * membrane_threshold * delta**2)
             / (1 - np.exp(-leak_coefficient * delta))
             - (external_current * delta**2) / (currents_period * num_neurons)
-        ) / ((num_neurons - 1) * (delta - refractory_period))
+        ) / (0.5 * small_world_graph_k * (delta - 1))
 
     # TODO: Parameterize the range of delta.
     delta = np.logspace(0.001, 3.2, 500)
     w_leak_free_values = w_leak_free(delta)
     w_leak_values = w_leak(delta)
 
-    horizontal_line = membrane_threshold / (
-        num_neurons - 1
-    ) - 2 * external_current * refractory_period / (
-        currents_period * (num_neurons - 1) * num_neurons
+    w_crit = membrane_threshold / (0.5 * small_world_graph_k) - (2 * external_current) / (
+        currents_period * num_neurons * 0.5 * small_world_graph_k
     )
-
-    w_crit_spike = membrane_threshold / (num_neurons - 1) - (
-        2 * external_current * refractory_period
-    ) / (currents_period * num_neurons * (num_neurons - 1))
 
     w_mean_unique_values = simulation_df["w_mean"].unique()
 
     fig, axs = plt.subplots(2, 2, figsize=(24, 16), constrained_layout=True)
 
     # Top-left plot
+    axs[0, 0].plot(
+        simulation_df["mean_isi"],
+        simulation_df["w_mean"],
+        label=r"Data",
+        color="black",
+        linewidth=5,
+    )
     axs[0, 0].plot(
         delta,
         w_leak_free_values,
@@ -87,7 +88,7 @@ def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationP
         linewidth=5,
     )
     axs[0, 0].axhline(
-        horizontal_line,
+        w_crit,
         color="purple",
         linestyle="--",
         linewidth=3,
@@ -100,15 +101,7 @@ def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationP
         color="green",
         linewidth=5,
     )
-    if leak_coefficient > 0:
-        delta_alpha = 0.2 / leak_coefficient if leak_coefficient != 0 else np.inf
-        axs[0, 0].axvline(
-            delta_alpha,
-            color="green",
-            linestyle=":",
-            linewidth=3,
-            label=r"$\alpha\langle \delta\rangle=0.2$",
-        )
+
     axs[0, 0].set_xscale("log")
     axs[0, 0].set_yscale("log")
     axs[0, 0].set_xlabel(r"$\langle \delta \rangle$")
@@ -132,7 +125,7 @@ def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationP
         w_mean_unique_values, nspike_q1, nspike_q3, color="black", alpha=0.2
     )
     axs[0, 1].axvline(
-        x=w_crit_spike,
+        x=w_crit,
         color="purple",
         linestyle="--",
         linewidth=5,
@@ -150,10 +143,6 @@ def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationP
     axs[0, 1].legend(loc="upper left")
 
     # Bottom-left plot
-    w_crit_lzw = membrane_threshold / (num_neurons - 1) - (
-        2 * external_current * refractory_period
-    ) / (currents_period * num_neurons * (num_neurons - 1))
-
     grouped_lzw = simulation_df.groupby("w_mean")
     median_complexity = grouped_lzw["lzw_complexity"].median().values
     median_complexity_max = median_complexity.max()
@@ -176,7 +165,7 @@ def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationP
         w_mean_unique_values, q1_complexity, q3_complexity, color="black", alpha=0.2
     )
     axs[1, 0].axvline(
-        x=w_crit_lzw,
+        x=w_crit,
         color="purple",
         linestyle="--",
         linewidth=5,
