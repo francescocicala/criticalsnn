@@ -163,5 +163,5 @@ class SNN:
         if total_inter_spike_intervals:
             mean_inter_spike_interval = np.mean(total_inter_spike_intervals)
         else:
-            mean_inter_spike_interval = 0
+            mean_inter_spike_interval = self.simulation_duration
         return float(mean_inter_spike_interval) / self.refractory_period
