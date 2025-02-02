@@ -68,6 +68,9 @@ def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationP
         currents_period * num_neurons * 0.5 * small_world_graph_k
     )
 
+    w_min_spike_lzw_plot = w_crit * 0.5
+    w_max_spike_lzw_plot = w_crit * 3
+
     w_mean_unique_values = simulation_df["w_mean"].unique()
 
     fig, axs = plt.subplots(2, 2, figsize=(24, 16), constrained_layout=True)
@@ -83,7 +86,7 @@ def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationP
     axs[0, 0].plot(
         delta,
         w_leak_free_values,
-        label=r"$\langle W \rangle(\langle \delta\rangle)_{\text{leak-free}}$",
+        label=r"$\langle W \rangle(\langle \Delta\rangle)_{\text{leak-free}}$",
         color="purple",
         linewidth=5,
     )
@@ -92,19 +95,19 @@ def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationP
         color="purple",
         linestyle="--",
         linewidth=3,
-        label=r"$\langle W \rangle_{\text{critical}}$",
+        label=r"$\langle W \rangle_{\text{critical,leak-free}}$",
     )
     axs[0, 0].plot(
         delta,
         w_leak_values,
-        label=r"$\langle W \rangle(\langle \delta\rangle)_{\text{leak}}$",
+        label=r"$\langle W \rangle(\langle \Delta\rangle)_{\text{leak}}$",
         color="green",
         linewidth=5,
     )
 
     axs[0, 0].set_xscale("log")
     axs[0, 0].set_yscale("log")
-    axs[0, 0].set_xlabel(r"$\langle \delta \rangle$")
+    axs[0, 0].set_xlabel(r"$\langle \Delta \rangle$")
     axs[0, 0].set_ylabel(r"$\langle W \rangle$")
     axs[0, 0].legend(loc="lower left")
 
@@ -131,7 +134,7 @@ def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationP
         linewidth=5,
         label=r"$\langle W \rangle_{\text{critical}}$",
     )
-    axs[0, 1].set_xlim(0.011, 0.049)
+    axs[0, 1].set_xlim(w_min_spike_lzw_plot,w_max_spike_lzw_plot)
     axs[0, 1].set_xlabel(r"$\langle W \rangle$")
     axs[0, 1].set_ylabel(r"Number of Spikes")
 
@@ -171,7 +174,7 @@ def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationP
         linewidth=5,
         label=r"$\langle W \rangle_{\text{critical}}$",
     )
-    axs[1, 0].set_xlim(0.011, 0.049)
+    axs[1, 0].set_xlim(w_min_spike_lzw_plot,w_max_spike_lzw_plot)
     axs[1, 0].set_xlabel(r"$\langle W \rangle$")
     axs[1, 0].set_ylabel(r"Normalized LZW Complexity")
     axs[1, 0].legend(loc="upper left")
