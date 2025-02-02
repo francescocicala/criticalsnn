@@ -25,8 +25,13 @@ def init_matplotlib_style():
     )
 
 
-def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationParams):
-    """Generate three plots: (1) Leak-free vs leak <W>(<ISI>) comparison, (2) number of spikes, and (3) LZW complexity."""
+def plot_all_results(
+    simulation_df: pd.DataFrame,
+    simulation_params: SimulationParams,
+    low_quantile: float = 0.01,
+    high_quantile: float = 0.99,
+):
+    """Generate three plots: (1) Leak-free vs leak <W>(<ISI>) comparison,(2) number of spikes, and (3) LZW complexity."""
 
     # Raise error if any of "w_mean", "total_spikes", "lzw_complexity", or "mean_isi" columns are missing
     if not all(
@@ -41,7 +46,6 @@ def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationP
     membrane_threshold = simulation_params.membrane_threshold
     currents_period = simulation_params.currents_period
     external_current = simulation_params.external_current
-    refractory_period = simulation_params.refractory_period
     leak_coefficient = simulation_params.leak_coefficient
     num_neurons = simulation_params.num_neurons
     small_world_graph_k = simulation_params.small_world_graph_k
@@ -64,24 +68,29 @@ def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationP
     w_leak_free_values = w_leak_free(delta)
     w_leak_values = w_leak(delta)
 
-    w_crit = membrane_threshold / (0.5 * small_world_graph_k) - (2 * external_current) / (
-        currents_period * num_neurons * 0.5 * small_world_graph_k
-    )
-
-    w_min_spike_lzw_plot = w_crit * 0.5
-    w_max_spike_lzw_plot = w_crit * 3
+    w_crit = membrane_threshold / (0.5 * small_world_graph_k) - (
+        2 * external_current
+    ) / (currents_period * num_neurons * 0.5 * small_world_graph_k)
 
     w_mean_unique_values = simulation_df["w_mean"].unique()
 
-    fig, axs = plt.subplots(2, 2, figsize=(24, 16), constrained_layout=True)
+    grouped_by_w_mean = simulation_df.groupby("w_mean")
+    mean_isi_median = grouped_by_w_mean["mean_isi"].median().values
+    mean_isi_q1 = grouped_by_w_mean["mean_isi"].quantile(low_quantile).values
+    mean_isi_q3 = grouped_by_w_mean["mean_isi"].quantile(high_quantile).values
+
+    _, axs = plt.subplots(2, 2, figsize=(24, 16), constrained_layout=True)
 
     # Top-left plot
     axs[0, 0].plot(
-        simulation_df["mean_isi"],
-        simulation_df["w_mean"],
+        mean_isi_median,
+        w_mean_unique_values,
         label=r"Data",
         color="black",
         linewidth=5,
+    )
+    axs[0, 0].fill_betweenx(
+        w_mean_unique_values, mean_isi_q1, mean_isi_q3, color="black", alpha=0.2
     )
     axs[0, 0].plot(
         delta,
@@ -112,10 +121,9 @@ def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationP
     axs[0, 0].legend(loc="lower left")
 
     # Top-right plot
-    grouped_spike = simulation_df.groupby("w_mean")
-    nspike_median = grouped_spike["total_spikes"].median().values
-    nspike_q1 = grouped_spike["total_spikes"].quantile(0.25).values
-    nspike_q3 = grouped_spike["total_spikes"].quantile(0.75).values
+    nspike_median = grouped_by_w_mean["total_spikes"].median().values
+    nspike_q1 = grouped_by_w_mean["total_spikes"].quantile(low_quantile).values
+    nspike_q3 = grouped_by_w_mean["total_spikes"].quantile(high_quantile).values
 
     axs[0, 1].plot(
         w_mean_unique_values,
@@ -134,7 +142,10 @@ def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationP
         linewidth=5,
         label=r"$\langle W \rangle_{\text{critical}}$",
     )
-    axs[0, 1].set_xlim(w_min_spike_lzw_plot,w_max_spike_lzw_plot)
+
+    w_min_spike_lzw_plot = w_crit * 0.5
+    w_max_spike_lzw_plot = w_crit * 3
+    axs[0, 1].set_xlim(w_min_spike_lzw_plot, w_max_spike_lzw_plot)
     axs[0, 1].set_xlabel(r"$\langle W \rangle$")
     axs[0, 1].set_ylabel(r"Number of Spikes")
 
@@ -146,15 +157,16 @@ def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationP
     axs[0, 1].legend(loc="upper left")
 
     # Bottom-left plot
-    grouped_lzw = simulation_df.groupby("w_mean")
-    median_complexity = grouped_lzw["lzw_complexity"].median().values
+    median_complexity = grouped_by_w_mean["lzw_complexity"].median().values
     median_complexity_max = median_complexity.max()
     median_complexity /= median_complexity_max
     q1_complexity = (
-        grouped_lzw["lzw_complexity"].quantile(0.25).values / median_complexity_max
+        grouped_by_w_mean["lzw_complexity"].quantile(low_quantile).values
+        / median_complexity_max
     )
     q3_complexity = (
-        grouped_lzw["lzw_complexity"].quantile(0.75).values / median_complexity_max
+        grouped_by_w_mean["lzw_complexity"].quantile(high_quantile).values
+        / median_complexity_max
     )
 
     axs[1, 0].plot(
@@ -174,10 +186,9 @@ def plot_all_results(simulation_df: pd.DataFrame, simulation_params: SimulationP
         linewidth=5,
         label=r"$\langle W \rangle_{\text{critical}}$",
     )
-    axs[1, 0].set_xlim(w_min_spike_lzw_plot,w_max_spike_lzw_plot)
+    axs[1, 0].set_xlim(w_min_spike_lzw_plot, w_max_spike_lzw_plot)
     axs[1, 0].set_xlabel(r"$\langle W \rangle$")
     axs[1, 0].set_ylabel(r"Normalized LZW Complexity")
     axs[1, 0].legend(loc="upper left")
 
-    # Bottom-right plot
     axs[1, 1].axis("off")  # Remove empty axis.
