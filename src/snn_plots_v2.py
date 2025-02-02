@@ -154,7 +154,7 @@ def plot_all_results(
     axs[0, 1].yaxis.get_major_formatter().set_scientific(True)
     axs[0, 1].yaxis.get_major_formatter().set_powerlimits((-1, 1))
 
-    axs[0, 1].legend(loc="upper left")
+    axs[0, 1].legend(loc="lower right")
 
     # Bottom-left plot
     median_complexity = grouped_by_w_mean["lzw_complexity"].median().values
@@ -189,6 +189,6 @@ def plot_all_results(
     axs[1, 0].set_xlim(w_min_spike_lzw_plot, w_max_spike_lzw_plot)
     axs[1, 0].set_xlabel(r"$\langle W \rangle$")
     axs[1, 0].set_ylabel(r"Normalized LZW Complexity")
-    axs[1, 0].legend(loc="upper left")
+    axs[1, 0].legend(loc="upper right")
 
     axs[1, 1].axis("off")  # Remove empty axis.
