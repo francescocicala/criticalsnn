@@ -63,10 +63,6 @@ def plot_all_results(
             - (external_current * delta**2) / (currents_period * num_neurons)
         ) / (0.5 * small_world_graph_k * (delta - 1))
 
-    # TODO: Parameterize the range of delta.
-    delta = np.logspace(0.001, 3.2, 500)
-    w_leak_free_values = w_leak_free(delta)
-    w_leak_values = w_leak(delta)
 
     w_crit = membrane_threshold / (0.5 * small_world_graph_k) - (
         2 * external_current
@@ -78,6 +74,11 @@ def plot_all_results(
     mean_isi_median = grouped_by_w_mean["mean_isi"].median().values
     mean_isi_q1 = grouped_by_w_mean["mean_isi"].quantile(low_quantile).values
     mean_isi_q3 = grouped_by_w_mean["mean_isi"].quantile(high_quantile).values
+
+    log_max_delta = np.log10(np.max(mean_isi_median))
+    delta = np.logspace(0.01, log_max_delta, 500)
+    w_leak_free_values = w_leak_free(delta)
+    w_leak_values = w_leak(delta)
 
     _, axs = plt.subplots(2, 2, figsize=(24, 16), constrained_layout=True)
 
