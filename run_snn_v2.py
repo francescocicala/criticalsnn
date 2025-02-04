@@ -76,6 +76,7 @@ def create_weights_steps_array(w_critical, num_steps):
 
 
 def compute_critical_weight(simulation_params):
+    """Compute the critical weight for the given parameters."""
     return simulation_params.membrane_threshold / (
         0.5 * simulation_params.small_world_graph_k
     ) - (2 * simulation_params.external_current) / (
