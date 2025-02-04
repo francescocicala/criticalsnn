@@ -1,165 +1,207 @@
-import numpy as np
+"""Spiking Neural Network (SNN) model."""
+
+import logging
+import math
 import random
-from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional
+
+from dataclasses import dataclass
+import networkx as nx
+import numpy as np
+
 
 @dataclass
-class SNNParameters:
-    """
-    Parameters for the Spiking Neural Network (SNN).
-    """
-    num_neurons: int = 1000          # Number of neurons
-    theta: float = 7.0               # Firing threshold
-    tau: float = 10.0                # Time interval for external current
-    external_current: float = 0.5    # Intensity of external current
-    t_ref: float = 2.0               # Refractory period
-    leak: float = 0.0                # Leak parameter (for leaky integrate-and-fire)
-    w_mean: float = 0.0              # Initial mean synaptic weight (updated if needed)
-    w_std_coefficient: float = 1.0               # Std dev for the synaptic weights
-    simulation_steps: int = 1000     # Number of steps in the simulation
+class SimulationParams:
+    """Simulation parameters for the Spiking Neural Network (SNN)."""
 
-@dataclass
-class SNN:
-    """
-    Spiking Neural Network (SNN) model.
-    """
-    params: SNNParameters
-    membrane_potentials: np.ndarray = field(init=False)
-    synaptic_weights: np.ndarray = field(init=False)
-    spike_times: List[List[int]] = field(init=False)  # Each neuron has a list of spike times
-    refractory_timer: np.ndarray = field(init=False)
-    tot_spike: int = 0
+    num_neurons: int
+    membrane_threshold: float
+    currents_period: float
+    external_current: float
+    leak_coefficient: float
+    simulation_duration: int
+    refractory_period: float
+    small_world_graph_p: float
+    small_world_graph_k: float
 
     def __post_init__(self) -> None:
-        self.membrane_potentials = np.random.uniform(
-            low=0, high=self.params.theta, size=self.params.num_neurons
-        )
-        self.synaptic_weights = np.random.normal(
-            loc=self.params.w_mean,
-            scale=self.params.w_std_coefficient * self.params.w_mean,
-            size=(self.params.num_neurons, self.params.num_neurons)
-        )
-        
-        # Prepare a list of lists for spike times (one list per neuron)
-        self.spike_times = [[] for _ in range(self.params.num_neurons)]
-        
-        # No self-connection
-        np.fill_diagonal(self.synaptic_weights, 0)
-        
-        # Refractory timers start at 0
-        self.refractory_timer = np.zeros(self.params.num_neurons)
+        """Post-initialization checks for the SimulationParams class."""
+        self.validate_parameters()
 
-    def stimulate_neuron(self) -> None:
-        """Deliver external current to a randomly chosen neuron."""
-        target_neuron = random.randint(0, self.params.num_neurons - 1)
-        self.membrane_potentials[target_neuron] += self.params.external_current
+    def validate_parameters(self) -> bool:
+        """Validate the parameters based on constraints."""
+        logging.info("Validating conditions with parameters: %s", self)
 
-    def simulate(self) -> None:
-        """
-        Simulate the network's activity over `simulation_steps`.
-        Each iteration:
-          - Decrease refractory_timer by 1
-          - Possibly stimulate a random neuron
-          - Check for spiking neurons
-          - Update membrane potentials and refractory periods
-        """
+        if (
+            self.currents_period
+            * self.num_neurons
+            * self.leak_coefficient
+            * self.membrane_threshold
+        ) != 0 and self.external_current / (
+            self.currents_period
+            * self.num_neurons
+            * self.leak_coefficient
+            * self.membrane_threshold
+        ) < 1:
+            logging.warning(
+                "Condition violated: external_current / (currents_period * num_neurons * leak_coefficient * membrane_threshold) < 1"
+            )
+            return False
+        if (
+            self.currents_period * self.num_neurons * self.membrane_threshold
+        ) != 0 and 2 * self.external_current / (
+            self.currents_period * self.num_neurons * self.membrane_threshold
+        ) > 1:
+            logging.warning(
+                "Condition violated: 2 * external_current / (currents_period * num_neurons * membrane_threshold) > 1"
+            )
+            return False
+        if self.leak_coefficient != 0 and 1 / (2 * self.leak_coefficient) < 1:
+            logging.warning("Condition violated: 1 / (2 * leak_coefficient) < 1")
+            return False
+
+        logging.info("All conditions validated successfully.")
+        return True
+
+
+class SNN:
+    """Spiking Neural Network (SNN) model."""
+
+    def __init__(
+        self, weights_mean: float, simulation_params: SimulationParams
+    ) -> None:
+        """Initialize the spiking neural network (SNN) with parameters."""
+        self.tot_spikes: int = 0
+        self.leak_refractory_ratio: float = (
+            simulation_params.leak_coefficient / simulation_params.refractory_period
+        )
+        self.num_neurons: int = simulation_params.num_neurons
+        self.membrane_threshold: float = simulation_params.membrane_threshold
+        self.current_period_times_refractory: float = (
+            simulation_params.currents_period * simulation_params.refractory_period
+        )
+        self.external_current: float = simulation_params.external_current
+        self.simulation_duration: int = simulation_params.simulation_duration
+        self.refractory_period: float = simulation_params.refractory_period
+        self.time_step: int = 1
+        self.weights_mean: float = weights_mean
+
+        self.membrane_potentials: np.ndarray = np.random.uniform(
+            0, self.membrane_threshold, self.num_neurons
+        )
+        self.spike_times: List[List[int]] = [
+            [] for _ in range(simulation_params.num_neurons)
+        ]
+        self.avg_in_degree: Optional[float] = None
+        self.spike_matrix: Optional[np.ndarray] = None
+
+        self.generate_synaptic_weights(
+            simulation_params.small_world_graph_p, simulation_params.small_world_graph_k
+        )
+
+        self.refractory_timer: np.ndarray = np.zeros(simulation_params.num_neurons)
+
+    def generate_synaptic_weights(
+        self,
+        small_world_graph_p: float = 0.1,
+        small_world_graph_k: int = 10,
+        weights_scale_factor: float = 0.1,
+    ) -> None:
+        """Generate synaptic weights based on a small-world graph."""
+        small_world_graph = nx.watts_strogatz_graph(
+            n=self.num_neurons, k=small_world_graph_k, p=small_world_graph_p, seed=None
+        )
+        synaptic_weights = np.zeros((self.num_neurons, self.num_neurons))
+
+        for edge in small_world_graph.edges():
+            i, j = edge
+            if np.random.rand() < 0.5:
+                synaptic_weights[i, j] = np.random.normal(
+                    loc=self.weights_mean,
+                    scale=abs(self.weights_mean) * weights_scale_factor,
+                )
+            else:
+                synaptic_weights[j, i] = np.random.normal(
+                    loc=self.weights_mean,
+                    scale=abs(self.weights_mean) * weights_scale_factor,
+                )
+
+        np.fill_diagonal(synaptic_weights, 0)
+        self.synaptic_weights: np.ndarray = synaptic_weights
+
+        in_degrees = np.count_nonzero(self.synaptic_weights, axis=0)
+        self.avg_in_degree = in_degrees.mean()
+
+    def in_degree(self) -> Optional[float]:
+        """Return the average in-degree of the network."""
+        return self.avg_in_degree
+
+    def stimulate_neuron(self, num_stimulated_neurons: int) -> None:
+        """Stimulate a specified number of neurons."""
+        target_neurons = random.sample(range(self.num_neurons), num_stimulated_neurons)
+        self.membrane_potentials[target_neurons] += self.external_current
+
+    def simulate(self) -> Optional[np.ndarray]:
+        """Run the simulation of the SNN."""
+        self.tot_spikes = 0
         self.spike_matrix = np.zeros(
-            (self.params.simulation_steps, self.params.num_neurons), dtype=int
+            (self.simulation_duration, self.num_neurons), dtype=int
         )
-        self.tot_spike = 0
+        integer_current_period_times_refractory = int(
+            self.current_period_times_refractory
+        )
+        greatest_common_divisor = math.gcd(
+            int(self.current_period_times_refractory * 10), 10
+        )
+        tau_n = int(self.current_period_times_refractory * 10 / greatest_common_divisor)
+        tau_d = int(10 / greatest_common_divisor)
+        currents_counter = 0
 
-        for t in range(self.params.simulation_steps):
-            # Decrement refractory timers
-            self.refractory_timer = np.maximum(0, self.refractory_timer - 1)
-
-            # Stimulate a neuron at specific intervals
-            if t % self.params.tau == 0:
-                self.stimulate_neuron()
-
-            # Determine which neurons spike
-            spiking_neurons = (
-                (self.membrane_potentials >= self.params.theta)
-                & (self.refractory_timer == 0)
+        for t in range(self.simulation_duration):
+            self.refractory_timer = np.maximum(
+                0, self.refractory_timer - self.time_step
             )
 
-            # Record spikes in the spike matrix
-            self.spike_matrix[t, :] = spiking_neurons.astype(int)
-            self.tot_spike += np.sum(spiking_neurons)
+            if self.current_period_times_refractory < 1:
+                if currents_counter % tau_n == 0:
+                    self.stimulate_neuron(tau_d)
+            if self.current_period_times_refractory >= 1:
+                if (
+                    integer_current_period_times_refractory > 0
+                    and currents_counter % integer_current_period_times_refractory == 0
+                ):
+                    self.stimulate_neuron(1)
+                if currents_counter == self.current_period_times_refractory * 10:
+                    currents_counter = 0
+            currents_counter += 1
 
-            # Append spike times for spiking neurons
+            spiking_neurons = (self.membrane_potentials >= self.membrane_threshold) & (
+                self.refractory_timer == 0
+            )
+            self.spike_matrix[t, :] = spiking_neurons.astype(int)
+            self.tot_spikes += np.sum(spiking_neurons)
+
             for idx in np.where(spiking_neurons)[0]:
                 self.spike_times[idx].append(t)
 
-            # Reset potentials for spiking neurons & set refractory timers
             self.membrane_potentials[spiking_neurons] = 0
-            self.refractory_timer[spiking_neurons] = self.params.t_ref
+            self.refractory_timer[spiking_neurons] = self.refractory_period + 1
+            self.membrane_potentials = (
+                1 - self.leak_refractory_ratio
+            ) * self.membrane_potentials + spiking_neurons.astype(
+                float
+            ) @ self.synaptic_weights
+        return self.spike_matrix
 
-            # Update membrane potentials:
-            #   - Add synaptic input from spiking neurons
-            #   - Subtract leak
-            self.membrane_potentials += (
-                spiking_neurons.astype(float) @ self.synaptic_weights
-                - self.params.leak * self.membrane_potentials
-            )
-
-    def get_mean_isi(self) -> float:
-        """
-        Return the mean inter-spike interval (ISI) across all neurons in the network.
-        If no spikes or single spikes per neuron, returns 0.
-        """
+    def calculate_mean_isi(self) -> float:
+        """Calculate the mean inter-spike interval (ISI)."""
         total_inter_spike_intervals = []
-        for neuron_spikes in self.spike_times:
-            if len(neuron_spikes) > 1:
-                isi = np.diff(neuron_spikes)
-                total_inter_spike_intervals.extend(isi)
-
+        for spike_times in self.spike_times:
+            if len(spike_times) > 1:
+                inter_spike_interval = np.diff(spike_times)
+                total_inter_spike_intervals.extend(inter_spike_interval)
         if total_inter_spike_intervals:
-            return float(np.mean(total_inter_spike_intervals))
+            mean_inter_spike_interval = np.mean(total_inter_spike_intervals)
         else:
-            return 0.0
-
-    def get_total_spikes(self) -> int:
-        """Return the total number of spikes over the entire simulation."""
-        return self.tot_spike
-
-def lzw_complexity_from_matrix(matrix: np.ndarray) -> int:
-    """
-    Calculate the Lempel-Ziv-Welch (LZW) complexity of a vector created by
-    concatenating the columns of a 2D matrix.
-    Args:
-        matrix (np.ndarray): A 2D NumPy array representing spike data
-                             (rows typically time, columns neurons).
-
-    Returns:
-        int: The LZW complexity of the concatenated sequence.
-    """
-    def lzw(seq: str) -> int:
-        """
-        Calculate the LZW complexity of a binary (string) sequence.
-
-        Args:
-            seq (str): The sequence string (e.g., '101001...').
-
-        Returns:
-            int: The size of the generated dictionary, representing
-                 the LZW complexity.
-        """
-        dictionary = {}
-        w = ""
-        for c in seq:
-            wc = w + c
-            if wc not in dictionary:
-                dictionary[wc] = len(dictionary)
-                w = c
-            else:
-                w = wc
-        return len(dictionary)
-
-    # Transpose and then flatten to read column by column
-    vector = matrix.T.flatten()
-    # Convert the vector into a string
-    vector_str = "".join(map(str, vector))
-
-    # Calculate the LZW complexity
-    complexity = lzw(vector_str)
-    return complexity
+            mean_inter_spike_interval = self.simulation_duration
+        return float(mean_inter_spike_interval) / self.refractory_period

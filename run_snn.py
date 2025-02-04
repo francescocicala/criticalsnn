@@ -1,43 +1,65 @@
 """Simulate a Spiking Neural Network (SNN) with a range of w_mean values."""
-import os
-import time
-import argparse
-import random
-from typing import Dict, Any, List
-import logging
 
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from dotenv import load_dotenv
-import comet_ml
+import argparse
+import logging
+import os
+import random
+import time
 from tqdm import tqdm
+from typing import Any, Dict, List
 import yaml
 
-from src.models import SNN, SNNParameters, lzw_complexity_from_matrix
-from src.utils import load_config
-from src.snn_plots import plot_all_results
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
-# Configure logging
+from src.models import lzw_complexity_from_matrix
+from src.models import SNN, SimulationParams
+from src.snn_plots import plot_all_results
+from src.utils import load_config
+
+
+# Configure logging to include INFO level and above
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
+def create_weights_steps_array(w_critical, num_steps):
+    w_start = 0.1 * w_critical
+    w_mid = 1.5 * w_critical
+    w_end = 16 * w_critical
+    num_steps_half = num_steps // 2
+    w_means_1 = np.linspace(w_start, w_mid, num_steps_half, endpoint=False)
+    w_means_2 = np.linspace(w_mid, w_end, num_steps - num_steps_half)
+    return np.concatenate([w_means_1, w_means_2])
 
-def run_simulation(params: SNNParameters) -> Dict[str, Any]:
-    """Run a single simulation with the given parameters."""
-    snn = SNN(params)
-    snn.simulate()
+
+def compute_critical_weight(simulation_params):
+    """Compute the critical weight for the given parameters."""
+    return simulation_params.membrane_threshold / (
+        0.5 * simulation_params.small_world_graph_k
+    ) - (2 * simulation_params.external_current) / (
+        simulation_params.currents_period
+        * simulation_params.num_neurons
+        * 0.5
+        * simulation_params.small_world_graph_k
+    )
+
+
+def run_simulation(simulation_params, weights_mean):
+    """Run the simulation with the given parameters."""
+    network = SNN(weights_mean, simulation_params)
+    spike_matrix = network.simulate()
     return {
-        "w_mean": params.w_mean,
-        "mean_isi": snn.get_mean_isi(),
-        "total_spikes": snn.get_total_spikes(),
-        "lzw_complexity": lzw_complexity_from_matrix(snn.spike_matrix),
+        "w_mean": weights_mean,
+        "total_spikes": network.tot_spikes,
+        "lzw_complexity": lzw_complexity_from_matrix(spike_matrix),
+        "mean_isi": network.calculate_mean_isi(),
     }
 
 
-def main() -> None:
-    """Run the simulation."""
+def main():
+    """Run simulation for a range of w_mean values, save the results and generate plots."""
     parser = argparse.ArgumentParser(description="Run simulation.")
     parser.add_argument(
         "--config",
@@ -50,12 +72,6 @@ def main() -> None:
         type=str,
         default="results/snn",
         help="Optional output directory name.",
-    )
-    parser.add_argument(
-        "--cometml",
-        action="store_true",
-        default=False,
-        help="Enable CometML integration.",
     )
     parser.add_argument(
         "--dry_run",
@@ -71,34 +87,22 @@ def main() -> None:
 
     logging.info("Loading configuration from %s", args.config)
     config = load_config(args.config)
-    params = SNNParameters(**config["snn_params"])
-
-    if args.cometml:
-        load_dotenv()
-        comet_experiment = comet_ml.Experiment(
-            api_key=os.environ.get("COMETML_API_KEY"),
-            project_name=os.environ.get("COMETML_PROJECT"),
-            workspace=os.environ.get("COMETML_WORKSPACE"),
-        )
-        comet_experiment.log_parameters(config)
-        logging.info("CometML integration enabled")
+    simulation_params = SimulationParams(**config["simulation_params"])
 
     # Set seed for reproducibility
     np.random.seed(config["seed"])
     random.seed(config["seed"])
 
-    logging.info("Running simulations over a range of w_mean values")
-    w_means = np.arange(
-        config["w_means_range_min"],
-        config["w_means_range_max"],
-        config["w_means_range_step"],
-    )
+    logging.info("Running simulations over a range of w_mean values.")
+    w_critical = compute_critical_weight(simulation_params)
 
+    w_means = create_weights_steps_array(w_critical, config["w_means_range_num_steps"])
+
+    print(f"Running simulation with parameters: {simulation_params}")
     results: List[Dict[str, Any]] = []
     for w_mean in tqdm(w_means, desc="w_mean values"):
-        params.w_mean = float(w_mean)
         for _ in range(config["experiment_repetitions"]):
-            results.append(run_simulation(params))
+            results.append(run_simulation(simulation_params, float(w_mean)))
 
     df_results = pd.DataFrame(results)
 
@@ -115,21 +119,19 @@ def main() -> None:
         )
 
         # Store the SNNParameters as a YAML file
-        with open(os.path.join(output_dir, "snn_parameters.yaml"), "w") as f:
+        with open(
+            os.path.join(output_dir, "snn_parameters.yaml"), "w", encoding="utf-8"
+        ) as f:
             yaml.dump(config, f)
 
         logging.info("Plotting all results")
-        plot_all_results(df_results, params)
+        plot_all_results(df_results, simulation_params)
         plt.savefig(os.path.join(output_dir, "simulation_plots.png"), dpi=300)
         logging.info(
             "All results plot saved to %s",
             os.path.join(output_dir, "simulation_all_plot.png"),
         )
-
-    if args.cometml:
-        comet_experiment.log_figure("all_results", figure=plt)
-        logging.info("All results plot logged to CometML")
-        comet_experiment.end()
+        plt.show()
 
     logging.info("Simulation completed")
 
