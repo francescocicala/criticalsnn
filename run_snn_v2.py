@@ -121,13 +121,14 @@ def main():
         * 0.5
         * simulation_params.small_world_graph_k
     )
-    w_start = 0.5 * w_critical
+    
+    w_start = 0.1 * w_critical
+    w_mid = 1.5 * w_critical
     w_end = 16 * w_critical
-    w_means = np.arange(
-        w_start,
-        w_end,
-        (w_end - w_start) / config["w_means_range_num_steps"],
-    )
+    num_steps_half = config["w_means_range_num_steps"] // 2
+    w_means_1 = np.linspace(w_start, w_mid, num_steps_half, endpoint=False)
+    w_means_2 = np.linspace(w_mid, w_end, config["w_means_range_num_steps"] - num_steps_half)
+    w_means = np.concatenate([w_means_1, w_means_2])
 
     print(f"Running simulation with parameters: {simulation_params}")
     results: List[Dict[str, Any]] = []
@@ -168,3 +169,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+plt.show()
+
