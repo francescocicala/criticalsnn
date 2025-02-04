@@ -86,7 +86,7 @@ def plot_all_results(
     axs[0, 0].plot(
         mean_isi_median,
         w_mean_unique_values,
-        label=r"Data",
+        label=r"Synthetic SNN",
         color="black",
         linewidth=5,
     )
@@ -96,7 +96,7 @@ def plot_all_results(
     axs[0, 0].plot(
         delta,
         w_leak_free_values,
-        label=r"$\langle W \rangle(\langle \Delta\rangle)_{\text{leak-free}}$",
+        label=r"$\langle W \rangle(\langle \Delta\rangle)_{\text{leak-free}}$ (Eq. 6)",
         color="purple",
         linewidth=5,
     )
@@ -105,20 +105,20 @@ def plot_all_results(
         color="purple",
         linestyle="--",
         linewidth=3,
-        label=r"$\langle W \rangle_{\text{critical,leak-free}}$",
+        label=r"$\langle W \rangle_{\text{critical,leak-free}}$ (Eq. 3)",
     )
     axs[0, 0].plot(
         delta,
         w_leak_values,
-        label=r"$\langle W \rangle(\langle \Delta\rangle)_{\text{leak}}$",
+        label=r"$\langle W \rangle(\langle \Delta\rangle)_{\text{leak}}$ (Eq. 2)",
         color="green",
         linewidth=5,
     )
 
     axs[0, 0].set_xscale("log")
     axs[0, 0].set_yscale("log")
-    axs[0, 0].set_xlabel(r"$\langle \Delta \rangle$")
-    axs[0, 0].set_ylabel(r"$\langle W \rangle$")
+    axs[0, 0].set_xlabel(r"Average ISI ($\langle \Delta \rangle$, ms)")
+    axs[0, 0].set_ylabel(r"Average Synaptic Weight ($\langle W \rangle$)")
     axs[0, 0].legend(loc="lower left")
 
     # Top-right plot
@@ -131,7 +131,7 @@ def plot_all_results(
         nspike_median,
         color="black",
         linewidth=5,
-        label=r"Num. Spikes (synthetic SNN)",
+        label=r"Synthetic SNN",
     )
     axs[0, 1].fill_between(
         w_mean_unique_values, nspike_q1, nspike_q3, color="black", alpha=0.2
@@ -141,13 +141,13 @@ def plot_all_results(
         color="purple",
         linestyle="--",
         linewidth=5,
-        label=r"$\langle W \rangle_{\text{critical}}$",
+        label=r"$\langle W \rangle_{\text{critical,leak-free}}$ (Eq. 3)",
     )
 
     w_min_spike_lzw_plot = w_crit * 0.5
-    w_max_spike_lzw_plot = w_crit * 3
+    w_max_spike_lzw_plot = w_crit * 2
     axs[0, 1].set_xlim(w_min_spike_lzw_plot, w_max_spike_lzw_plot)
-    axs[0, 1].set_xlabel(r"$\langle W \rangle$")
+    axs[0, 1].set_xlabel(r"Average Synaptic Weight  ($\langle W \rangle$)")
     axs[0, 1].set_ylabel(r"Number of Spikes")
 
     # Configure y-axis to use scientific notation
@@ -175,7 +175,7 @@ def plot_all_results(
         median_complexity,
         color="black",
         linewidth=5,
-        label=r"LZW complexity (synthetic SNN)",
+        label=r"Synthetic SNN",
     )
     axs[1, 0].fill_between(
         w_mean_unique_values, q1_complexity, q3_complexity, color="black", alpha=0.2
@@ -185,10 +185,10 @@ def plot_all_results(
         color="purple",
         linestyle="--",
         linewidth=5,
-        label=r"$\langle W \rangle_{\text{critical}}$",
+        label=r"$\langle W \rangle_{\text{critical,leak-free}}$ (Eq. 3)",
     )
     axs[1, 0].set_xlim(w_min_spike_lzw_plot, w_max_spike_lzw_plot)
-    axs[1, 0].set_xlabel(r"$\langle W \rangle$")
+    axs[1, 0].set_xlabel(r"Average Synaptic Weight ($\langle W \rangle$)")
     axs[1, 0].set_ylabel(r"Normalized LZW Complexity")
     axs[1, 0].legend(loc="upper right")
 
