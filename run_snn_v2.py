@@ -24,43 +24,6 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-
-def validate_parameters(params):
-    """Validate conditions based on parameter constraints."""
-    logging.info("Validating conditions with parameters: %s", params)
-
-    if (
-        params.currents_period
-        * params.num_neurons
-        * params.leak_coefficient
-        * params.membrane_threshold
-    ) != 0 and params.external_current / (
-        params.currents_period
-        * params.num_neurons
-        * params.leak_coefficient
-        * params.membrane_threshold
-    ) < 1:
-        logging.warning(
-            "Condition violated: external_current / (currents_period * num_neurons * leak_coefficient * membrane_threshold) < 1"
-        )
-        return False
-    if (
-        params.currents_period * params.num_neurons * params.membrane_threshold
-    ) != 0 and 2 * params.external_current / (
-        params.currents_period * params.num_neurons * params.membrane_threshold
-    ) > 1:
-        logging.warning(
-            "Condition violated: 2 * external_current / (currents_period * num_neurons * membrane_threshold) > 1"
-        )
-        return False
-    if params.leak_coefficient != 0 and 1 / (2 * params.leak_coefficient) < 1:
-        logging.warning("Condition violated: 1 / (2 * leak_coefficient) < 1")
-        return False
-
-    logging.info("All conditions validated successfully.")
-    return True
-
-
 def create_weights_steps_array(w_critical, num_steps):
     w_start = 0.1 * w_critical
     w_mid = 1.5 * w_critical
@@ -125,7 +88,6 @@ def main():
     logging.info("Loading configuration from %s", args.config)
     config = load_config(args.config)
     simulation_params = SimulationParams(**config["simulation_params"])
-    validate_parameters(simulation_params)
 
     # Set seed for reproducibility
     np.random.seed(config["seed"])

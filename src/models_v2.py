@@ -1,5 +1,6 @@
 """Spiking Neural Network (SNN) model (V2)."""
 
+import logging
 import math
 import random
 from typing import List, Optional
@@ -22,6 +23,45 @@ class SimulationParams:
     refractory_period: float
     small_world_graph_p: float
     small_world_graph_k: float
+
+    def __post_init__(self) -> None:
+        """Post-initialization checks for the SimulationParams class."""
+        self.validate_parameters()
+
+    def validate_parameters(self) -> bool:
+        """Validate the parameters based on constraints."""
+        logging.info("Validating conditions with parameters: %s", self)
+
+        if (
+            self.currents_period
+            * self.num_neurons
+            * self.leak_coefficient
+            * self.membrane_threshold
+        ) != 0 and self.external_current / (
+            self.currents_period
+            * self.num_neurons
+            * self.leak_coefficient
+            * self.membrane_threshold
+        ) < 1:
+            logging.warning(
+                "Condition violated: external_current / (currents_period * num_neurons * leak_coefficient * membrane_threshold) < 1"
+            )
+            return False
+        if (
+            self.currents_period * self.num_neurons * self.membrane_threshold
+        ) != 0 and 2 * self.external_current / (
+            self.currents_period * self.num_neurons * self.membrane_threshold
+        ) > 1:
+            logging.warning(
+                "Condition violated: 2 * external_current / (currents_period * num_neurons * membrane_threshold) > 1"
+            )
+            return False
+        if self.leak_coefficient != 0 and 1 / (2 * self.leak_coefficient) < 1:
+            logging.warning("Condition violated: 1 / (2 * leak_coefficient) < 1")
+            return False
+
+        logging.info("All conditions validated successfully.")
+        return True
 
 
 class SNN:
