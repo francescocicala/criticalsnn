@@ -65,6 +65,16 @@ def validate_conditions(params):
     return True
 
 
+def create_weights_steps_array(w_critical, num_steps):
+    w_start = 0.1 * w_critical
+    w_mid = 1.5 * w_critical
+    w_end = 16 * w_critical
+    num_steps_half = num_steps // 2
+    w_means_1 = np.linspace(w_start, w_mid, num_steps_half, endpoint=False)
+    w_means_2 = np.linspace(w_mid, w_end, num_steps - num_steps_half)
+    return np.concatenate([w_means_1, w_means_2])
+
+
 def run_simulation(simulation_params, weights_mean):
     """Run the simulation with the given parameters."""
     network = SNN(weights_mean, simulation_params)
@@ -121,14 +131,8 @@ def main():
         * 0.5
         * simulation_params.small_world_graph_k
     )
-    
-    w_start = 0.1 * w_critical
-    w_mid = 1.5 * w_critical
-    w_end = 16 * w_critical
-    num_steps_half = config["w_means_range_num_steps"] // 2
-    w_means_1 = np.linspace(w_start, w_mid, num_steps_half, endpoint=False)
-    w_means_2 = np.linspace(w_mid, w_end, config["w_means_range_num_steps"] - num_steps_half)
-    w_means = np.concatenate([w_means_1, w_means_2])
+
+    w_means = create_weights_steps_array(w_critical, config["w_means_range_num_steps"])
 
     print(f"Running simulation with parameters: {simulation_params}")
     results: List[Dict[str, Any]] = []
@@ -163,12 +167,10 @@ def main():
             "All results plot saved to %s",
             os.path.join(output_dir, "simulation_all_plot.png"),
         )
+        plt.show()
 
     logging.info("Simulation completed")
 
 
 if __name__ == "__main__":
     main()
-
-plt.show()
-
