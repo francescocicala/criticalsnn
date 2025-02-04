@@ -25,39 +25,35 @@ logging.basicConfig(
 )
 
 
-def validate_conditions(params):
+def validate_parameters(params):
     """Validate conditions based on parameter constraints."""
-    (
-        num_neurons,
-        membrane_threshold,
-        currents_period,
-        external_current,
-        leak_coefficient,
-        _,
-        _,
-        _,
-        _,
-    ) = params
-
     logging.info("Validating conditions with parameters: %s", params)
 
     if (
-        currents_period * num_neurons * leak_coefficient * membrane_threshold
-    ) != 0 and external_current / (
-        currents_period * num_neurons * leak_coefficient * membrane_threshold
+        params.currents_period
+        * params.num_neurons
+        * params.leak_coefficient
+        * params.membrane_threshold
+    ) != 0 and params.external_current / (
+        params.currents_period
+        * params.num_neurons
+        * params.leak_coefficient
+        * params.membrane_threshold
     ) < 1:
         logging.warning(
-            "Condition violated: I / (tau * num_neurons * leak_coefficient * theta) < 1"
+            "Condition violated: external_current / (currents_period * num_neurons * leak_coefficient * membrane_threshold) < 1"
         )
         return False
     if (
-        currents_period * num_neurons * membrane_threshold
-    ) != 0 and 2 * external_current / (
-        currents_period * num_neurons * membrane_threshold
+        params.currents_period * params.num_neurons * params.membrane_threshold
+    ) != 0 and 2 * params.external_current / (
+        params.currents_period * params.num_neurons * params.membrane_threshold
     ) > 1:
-        logging.warning("Condition violated: 2 * I / (tau * num_neurons * theta) > 1")
+        logging.warning(
+            "Condition violated: 2 * external_current / (currents_period * num_neurons * membrane_threshold) > 1"
+        )
         return False
-    if leak_coefficient != 0 and 1 / (2 * leak_coefficient) < 1:
+    if params.leak_coefficient != 0 and 1 / (2 * params.leak_coefficient) < 1:
         logging.warning("Condition violated: 1 / (2 * leak_coefficient) < 1")
         return False
 
@@ -129,6 +125,7 @@ def main():
     logging.info("Loading configuration from %s", args.config)
     config = load_config(args.config)
     simulation_params = SimulationParams(**config["simulation_params"])
+    validate_parameters(simulation_params)
 
     # Set seed for reproducibility
     np.random.seed(config["seed"])
