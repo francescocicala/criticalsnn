@@ -75,6 +75,17 @@ def create_weights_steps_array(w_critical, num_steps):
     return np.concatenate([w_means_1, w_means_2])
 
 
+def compute_critical_weight(simulation_params):
+    return simulation_params.membrane_threshold / (
+        0.5 * simulation_params.small_world_graph_k
+    ) - (2 * simulation_params.external_current) / (
+        simulation_params.currents_period
+        * simulation_params.num_neurons
+        * 0.5
+        * simulation_params.small_world_graph_k
+    )
+
+
 def run_simulation(simulation_params, weights_mean):
     """Run the simulation with the given parameters."""
     network = SNN(weights_mean, simulation_params)
@@ -123,14 +134,7 @@ def main():
     random.seed(config["seed"])
 
     logging.info("Running simulations over a range of w_mean values.")
-    w_critical = simulation_params.membrane_threshold / (
-        0.5 * simulation_params.small_world_graph_k
-    ) - (2 * simulation_params.external_current) / (
-        simulation_params.currents_period
-        * simulation_params.num_neurons
-        * 0.5
-        * simulation_params.small_world_graph_k
-    )
+    w_critical = compute_critical_weight(simulation_params)
 
     w_means = create_weights_steps_array(w_critical, config["w_means_range_num_steps"])
 
