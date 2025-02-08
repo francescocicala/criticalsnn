@@ -16,7 +16,7 @@ logging.basicConfig(
 def main():
     """Run simulation for a range of w_mean values, save the results, and generate plots."""
 
-    ITERATIONS = 2
+    ITERATIONS = 4
 
     args = program_parameters_reader("soqc_multi_parameters.yaml")
 
@@ -25,8 +25,8 @@ def main():
     config = load_config(args.config)
 
     # Set seed for reproducibility
-    np.random.seed(config["seed"])
-    random.seed(config["seed"])
+    # np.random.seed(config["seed"])
+    # random.seed(config["seed"])
 
     external_current_values = np.linspace(
         config["external_current_start"],
