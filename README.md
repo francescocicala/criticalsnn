@@ -75,7 +75,7 @@ The simulation is repeated on a grid of parameters to show how the error ratio (
 - Adapt config_soqc with desired parameters
 - Run `python run_soqc.py` (add the `--cometml` flag for tracking the experiment).
 
-### Configuration File: `soqc_multi-params.yaml`
+### Configuration File: `soqc_config.yaml`
 
 The configuration file `soqc_multi-params.yaml` is used to set the parameters for running the simulations. Below is an explanation of the main parameters and their roles:
 #### Example `soqc_config.yaml`:
