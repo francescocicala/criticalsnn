@@ -78,7 +78,7 @@ The simulation is repeated on a grid of parameters to show how the error ratio (
 ### Configuration File: `soqc_multi-params.yaml`
 
 The configuration file `soqc_multi-params.yaml` is used to set the parameters for running the simulations. Below is an explanation of the main parameters and their roles:
-#### Example `soqc_multi-params.yaml`:
+#### Example `soqc_config.yaml`:
 ```yaml
 seed: 42  # Used to generate random numbers in a reproducible way
 external_current_start: 2 # The minimum external current tested.
