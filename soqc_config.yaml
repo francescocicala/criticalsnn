@@ -1,22 +1,16 @@
-tau: 10
-threshold: 7
-refractory_time: 1.0
-w0: 60
-w1: 0
-alpha_value: 0.000002
 seed: 42
-
-i_small_range:
-  min: 0.01
-  max: 0.99
-  n_steps: 100
-
-i_large_range:
-  min: 1
-  max: 100
-  n_steps: 100
-
-n_range:
-  min: 1000
-  max: 2000
-  step: 100
+external_current_start: 2
+external_current_end: 8
+membrane_threshold_start: 10
+membrane_threshold_end: 200
+number_of_current_samples: 13
+number_of_threshold_samples: 20
+simulation_params:
+  num_neurons: 1000
+  currents_period: 1
+  number_of_external_current: 10
+  leak_coefficient: 0.0001
+  simulation_duration: 3000
+  refractory_period: 1
+  guessed_critical_weight: 0.5
+  precision: 0.01
