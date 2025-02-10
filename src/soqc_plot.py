@@ -1,8 +1,13 @@
+
+import numpy as np
 import os
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 
+# Configure logging to include INFO level and above
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 def analyze_csv_and_plot(filename):
     """Prints the maximum error and plots a heatmap from the data in the CSV file."""
@@ -49,6 +54,3 @@ def analyze_csv_and_plot(filename):
     output_plot_path = os.path.join(output_folder, "error_heatmap.png")
     fig.savefig(output_plot_path, dpi=300)
     print(f"Heatmap saved as {output_plot_path}")
-
-
-analyze_csv_and_plot("soqc_results_10_iteration.csv")

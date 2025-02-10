@@ -7,7 +7,6 @@ import sys
 from typing import List, Optional
 from dataclasses import dataclass
 
-
 @dataclass
 class SoqcParams:
     """Simulation parameters for the Spiking Neural Network (SNN)."""
@@ -19,7 +18,6 @@ class SoqcParams:
     number_of_external_current: int
     leak_coefficient: float
     simulation_duration: int
-    refractory_period: float
     guessed_critical_weight: float
     precision: float
 
@@ -65,19 +63,20 @@ class SNN:
 
     def __init__(self, simulation_params: SoqcParams, save_history=False) -> None:
         """Initialize the spiking neural network (SNN) with parameters."""
+        
+        self.REFRACTORY_PERIOD = 1
 
         self.tot_spikes: int = 0
         self.leak_refractory_ratio: float = (
-            simulation_params.leak_coefficient / simulation_params.refractory_period
+            simulation_params.leak_coefficient / self.REFRACTORY_PERIOD
         )
         self.num_neurons: int = simulation_params.num_neurons
         self.membrane_threshold: float = simulation_params.membrane_threshold
         self.current_period_times_refractory: float = (
-            simulation_params.currents_period * simulation_params.refractory_period
+            simulation_params.currents_period * self.REFRACTORY_PERIOD
         )
         self.external_current: float = simulation_params.external_current
         self.simulation_duration: int = simulation_params.simulation_duration
-        self.refractory_period: float = simulation_params.refractory_period
         self.time_step: int = 1
         self.membrane_potentials: np.ndarray = np.random.uniform(
             0, self.membrane_threshold, self.num_neurons
@@ -102,7 +101,7 @@ class SNN:
         """Returns the synaptic weight corresponding to the critical point."""
         return (
             self.membrane_threshold / self.avg_in_degree
-            - 2 * self.external_current * self.refractory_period
+            - 2 * self.external_current * self.REFRACTORY_PERIOD
             / (self.currents_period * self.num_neurons * self.avg_in_degree)
         )
 
@@ -143,7 +142,7 @@ class SNN:
             )
             self.tot_spikes += np.sum(spiking_neurons)
 
-            if t % (self.refractory_period + 1) == 0:
+            if t % (self.REFRACTORY_PERIOD + 1) == 0:
                 computed_mean_weight -= (computed_mean_weight * self.percentage_weights_update
                                           * (self.tot_spikes - self.num_neurons * self.PERCENTAGE_FIRING_NEURONS_AT_CRITICALITY)
                                           / (self.num_neurons * self.PERCENTAGE_FIRING_NEURONS_AT_CRITICALITY)
@@ -154,7 +153,7 @@ class SNN:
                 self.spike_times[idx].append(t)
 
             self.membrane_potentials[spiking_neurons] = 0
-            self.refractory_timer[spiking_neurons] = self.refractory_period + 1
+            self.refractory_timer[spiking_neurons] = self.REFRACTORY_PERIOD + 1
             self.membrane_potentials = (
                 1 - self.leak_refractory_ratio
             ) * self.membrane_potentials + spiking_neurons.astype(float) @ synaptic_weights

@@ -20,7 +20,6 @@ class SimulationParams:
     external_current: float
     leak_coefficient: float
     simulation_duration: int
-    refractory_period: float
     small_world_graph_p: float
     small_world_graph_k: float
 
@@ -71,18 +70,19 @@ class SNN:
         self, weights_mean: float, simulation_params: SimulationParams
     ) -> None:
         """Initialize the spiking neural network (SNN) with parameters."""
+        self.REFRACTORY_PERIOD = 10
+
         self.tot_spikes: int = 0
         self.leak_refractory_ratio: float = (
-            simulation_params.leak_coefficient / simulation_params.refractory_period
+            simulation_params.leak_coefficient / self.REFRACTORY_PERIOD
         )
         self.num_neurons: int = simulation_params.num_neurons
         self.membrane_threshold: float = simulation_params.membrane_threshold
         self.current_period_times_refractory: float = (
-            simulation_params.currents_period * simulation_params.refractory_period
+            simulation_params.currents_period * self.REFRACTORY_PERIOD
         )
         self.external_current: float = simulation_params.external_current
         self.simulation_duration: int = simulation_params.simulation_duration
-        self.refractory_period: float = simulation_params.refractory_period
         self.time_step: int = 1
         self.weights_mean: float = weights_mean
 
@@ -151,10 +151,10 @@ class SNN:
             self.current_period_times_refractory
         )
         greatest_common_divisor = math.gcd(
-            int(self.current_period_times_refractory * 10), 10
+            int(self.current_period_times_refractory * self.REFRACTORY_PERIOD), self.REFRACTORY_PERIOD
         )
-        tau_n = int(self.current_period_times_refractory * 10 / greatest_common_divisor)
-        tau_d = int(10 / greatest_common_divisor)
+        tau_n = int(self.current_period_times_refractory * self.REFRACTORY_PERIOD / greatest_common_divisor)
+        tau_d = int(self.REFRACTORY_PERIOD / greatest_common_divisor)
         currents_counter = 0
 
         for t in range(self.simulation_duration):
@@ -185,7 +185,7 @@ class SNN:
                 self.spike_times[idx].append(t)
 
             self.membrane_potentials[spiking_neurons] = 0
-            self.refractory_timer[spiking_neurons] = self.refractory_period + 1
+            self.refractory_timer[spiking_neurons] = self.REFRACTORY_PERIOD + 1
             self.membrane_potentials = (
                 1 - self.leak_refractory_ratio
             ) * self.membrane_potentials + spiking_neurons.astype(
@@ -204,7 +204,7 @@ class SNN:
             mean_inter_spike_interval = np.mean(total_inter_spike_intervals)
         else:
             mean_inter_spike_interval = self.simulation_duration
-        return float(mean_inter_spike_interval) / self.refractory_period
+        return float(mean_inter_spike_interval) / self.REFRACTORY_PERIOD
 
 
 def lzw_complexity_from_matrix(matrix: np.ndarray) -> int:
@@ -244,5 +244,5 @@ def lzw_complexity_from_matrix(matrix: np.ndarray) -> int:
     complexity = lzw(vector_str)
     return complexity
             mean_inter_spike_interval = self.simulation_duration
-        return float(mean_inter_spike_interval) / self.refractory_period
+        return float(mean_inter_spike_interval) / self.REFRACTORY_PERIOD
 
