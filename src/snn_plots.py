@@ -117,6 +117,7 @@ def plot_all_results(
 
     axs[0, 0].set_xscale("log")
     axs[0, 0].set_yscale("log")
+    axs[0, 0].set_ylim(np.min(w_mean_unique_values), np.max(w_mean_unique_values))
     axs[0, 0].set_xlabel(r"Average ISI ($\langle \Delta \rangle$, ms)")
     axs[0, 0].set_ylabel(r"Average Synaptic Weight ($\langle W \rangle$)")
     axs[0, 0].legend(loc="lower left")
@@ -145,7 +146,7 @@ def plot_all_results(
     )
 
     w_min_spike_lzw_plot = w_crit * 0.5
-    w_max_spike_lzw_plot = w_crit * 2
+    w_max_spike_lzw_plot = w_crit * 3
     axs[0, 1].set_xlim(w_min_spike_lzw_plot, w_max_spike_lzw_plot)
     axs[0, 1].set_xlabel(r"Average Synaptic Weight  ($\langle W \rangle$)")
     axs[0, 1].set_ylabel(r"Number of Spikes")
