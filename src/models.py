@@ -8,7 +8,6 @@ from typing import List, Optional
 from dataclasses import dataclass
 import networkx as nx
 import numpy as np
-import sys
 
 
 @dataclass
@@ -33,13 +32,12 @@ class SimulationParams:
         logging.info("Validating conditions with parameters: %s", self)
 
         if (
-            not (0.01 <= self.currents_period <= 9.99) 
+            not (0.01 <= self.currents_period <= 9.99)
             or not (self.currents_period * 100).is_integer()
-            ):
+        ):
             logging.warning(
                 "Condition violated: currents_period must be between 0.01 and 9.99, with at most two decimal places."
-                )
-            sys.exit()
+            )
         if (
             self.currents_period
             * self.num_neurons
@@ -225,6 +223,7 @@ def lzw_complexity_from_matrix(matrix: np.ndarray) -> int:
     Returns:
         int: The LZW complexity of the concatenated sequence.
     """
+
     def lzw(seq: str) -> int:
         """
         Calculate the LZW complexity of a binary (string) sequence.
@@ -244,6 +243,7 @@ def lzw_complexity_from_matrix(matrix: np.ndarray) -> int:
             else:
                 w = wc
         return len(dictionary)
+
     # Transpose and then flatten to read column by column
     vector = matrix.T.flatten()
     # Convert the vector into a string
@@ -251,4 +251,3 @@ def lzw_complexity_from_matrix(matrix: np.ndarray) -> int:
     # Calculate the LZW complexity
     complexity = lzw(vector_str)
     return complexity
-

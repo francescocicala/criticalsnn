@@ -24,6 +24,7 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
+
 def create_weights_steps_array(w_critical, num_steps):
     w_start = 0.1 * w_critical
     w_mid = 1.5 * w_critical
