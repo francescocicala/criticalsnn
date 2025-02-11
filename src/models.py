@@ -33,8 +33,8 @@ class SimulationParams:
         logging.info("Validating conditions with parameters: %s", self)
 
         if (
-            not (0.01 <= currents_period <= 9.99) 
-            or not (currents_period * 100).is_integer()
+            not (0.01 <= self.currents_period <= 9.99) 
+            or not (self.currents_period * 100).is_integer()
             ):
             logging.warning(
                 "Condition violated: currents_period must be between 0.01 and 9.99, with at most two decimal places."
