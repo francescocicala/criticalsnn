@@ -8,6 +8,5 @@ simulation_params:
   external_current: 1.5
   leak_coefficient: 0.01
   simulation_duration: 10000
-  refractory_period: 10
   small_world_graph_p: 0.2
   small_world_graph_k: 100
