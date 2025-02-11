@@ -59,7 +59,7 @@ simulation_params:
   leak_coefficient: 0.01  # The leak time constant for the neurons
   simulation_duration: 10000  # Number of steps for each simulation (duration of simulation for each fixed synaptic weight)
   small_world_graph_p: 0.2  # The probability of rewiring a connection in the small-world network
-  small_world_graph_k: 100  # The number of nearest neighbors in the small-world network
+  small_world_graph_k: 100  # The number of nearest neighbors in the small-world network, which corresponds to twice the average degree of the network (denoted as beta*N in the paper)
 ```
 
 ### Key Additions:
