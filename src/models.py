@@ -251,5 +251,4 @@ def lzw_complexity_from_matrix(matrix: np.ndarray) -> int:
     # Calculate the LZW complexity
     complexity = lzw(vector_str)
     return complexity
-            mean_inter_spike_interval = self.simulation_duration
 
