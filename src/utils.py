@@ -1,6 +1,7 @@
 import yaml
 from typing import Any, Dict
 
+
 def load_config(config_file: str) -> Dict[str, Any]:
     """
     Loads configuration data from a specified YAML file.
@@ -11,6 +12,6 @@ def load_config(config_file: str) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: A dictionary containing the configuration parameters.
     """
-    with open(config_file, 'r', encoding='utf-8') as file:
+    with open(config_file, "r", encoding="utf-8") as file:
         config: Dict[str, Any] = yaml.safe_load(file)
     return config
